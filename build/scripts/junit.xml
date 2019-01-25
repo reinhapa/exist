@@ -302,6 +302,9 @@
             <jvmarg value="-XX:MetaspaceSize=1g" />
             <jvmarg value="-XX:NewRatio=1" />
             <jvmarg line="${gc.log.file.prefix}${junit.reports.dat}/test-concurrent_gc.log" />
+            <!-- do some flight recorder stuff-->
+            <jvmarg value="-XX:StartFlightRecording=settings=profile,dumponexit=true,filename=${junit.reports.dat}/test-concurrent.jfr" />
+            <jvmarg value="-XX:FlightRecorderOptions=stackdepth=128" />
 
             <sysproperty key="exist.home" value="${basedir}" />
             <sysproperty key="java.util.logging.manager" value="org.apache.logging.log4j.jul.LogManager"/>
