@@ -305,7 +305,7 @@
             <jvmarg value="-XX:MaxTenuringThreshold=15" />
             <jvmarg line="${gc.log.file.prefix}${junit.reports.dat}/test-concurrent_gc.log" />
             <!-- do some flight recorder stuff-->
-            <jvmarg value="-XX:StartFlightRecording=settings=${basedir}/profile-no-gc.jfc,dumponexit=true,filename=${junit.reports.dat}/test-concurrent.jfr" />
+            <jvmarg value="-XX:StartFlightRecording=settings=${basedir}/profile-full-info.jfc,dumponexit=true,filename=${junit.reports.dat}/test-concurrent.jfr" />
             <jvmarg value="-XX:FlightRecorderOptions=stackdepth=128" />
 
             <sysproperty key="exist.home" value="${basedir}" />
