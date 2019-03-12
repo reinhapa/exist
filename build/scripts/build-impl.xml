@@ -460,6 +460,56 @@
             <exclude name="org/exist/xquery/functions/response/**"/>
             <exclude name="org/exist/xquery/functions/session/**"/>
         </jar>
+        <jar compress="true" jarfile="exist-sources.jar">
+            <manifest>
+                <attribute name="Implementation-Title" value="${project.name} Core"/>
+                <attribute name="Implementation-Version" value="${project.version}"/>
+                <attribute name="Implementation-Vendor" value="The eXist Project"/>
+                <attribute name="Implementation-Vendor-Id" value="org.exist-db"/>
+                <attribute name="Implementation-URL" value="https://github.com/exist-db/exist"/>
+
+                <attribute name="Specification-Title" value="${project.name} Core"/>
+                <attribute name="Specification-Version" value="${project.version}"/>
+                <attribute name="Specification-Vendor" value="The eXist Project"/>
+
+                <attribute name="Source-Repository" value="scm:git:https://github.com/exist-db/exist.git"/>
+                <attribute name="Git-Commit" value="${git.revision.full}"/>
+                <attribute name="Git-Commit-Abbrev" value="${git.revision}"/>
+                <attribute name="Build-Tag" value="${git.branch.full}"/>
+                <attribute name="Build-Timestamp" value="${DSTAMP}${TSTAMP}"/>
+                <attribute name="Built-By" value="${user.name}"/>
+                <attribute name="Build-Jdk" value="${java.version}"/>
+
+                <attribute name="Description" value="eXist XML Native Database"/>
+                <attribute name="Created-By" value="${ant.version}"/>
+            </manifest>
+            <fileset dir="${module.exist-core}/src/main/java" >
+                <exclude name="org/exist/*.xsl"/>
+                <exclude name="org/exist/ant/**"/>
+                <exclude name="org/exist/http/**"/>
+                <exclude name="org/exist/jetty/**"/>
+                <exclude name="org/exist/jsp/**"/>
+                <exclude name="org/exist/soap/**"/>
+                <exclude name="org/exist/start/**"/>
+                <exclude name="org/exist/webstart/**"/>
+                <exclude name="org/exist/xquery/functions/request/**"/>
+                <exclude name="org/exist/xquery/functions/response/**"/>
+                <exclude name="org/exist/xquery/functions/session/**"/>
+            </fileset>
+            <fileset dir="${module.exist-core}/src/main/resources" >
+                <exclude name="org/exist/*.xsl"/>
+                <exclude name="org/exist/ant/**"/>
+                <exclude name="org/exist/http/**"/>
+                <exclude name="org/exist/jetty/**"/>
+                <exclude name="org/exist/jsp/**"/>
+                <exclude name="org/exist/soap/**"/>
+                <exclude name="org/exist/start/**"/>
+                <exclude name="org/exist/webstart/**"/>
+                <exclude name="org/exist/xquery/functions/request/**"/>
+                <exclude name="org/exist/xquery/functions/response/**"/>
+                <exclude name="org/exist/xquery/functions/session/**"/>
+            </fileset>
+        </jar>
 
         <echo message="Creating start.jar ..."/>
         <jar basedir="${module.exist-start}/${build.classes}" compress="true" jarfile="start.jar">
@@ -489,6 +539,39 @@
                 <attribute name="Created-By" value="${ant.version}"/>
             </manifest>
             <include name="org/exist/start/**"/>
+        </jar>
+        <jar compress="true" jarfile="start-sources.jar">
+            <manifest>
+                <attribute name="Main-Class" value="org.exist.start.Main"/>
+                <attribute name="Package-Title" value="org.exist"/>
+
+                <attribute name="Implementation-Title" value="${project.name} Bootstrap"/>
+                <attribute name="Implementation-Version" value="${project.version}"/>
+                <attribute name="Implementation-Vendor" value="The eXist Project"/>
+                <attribute name="Implementation-Vendor-Id" value="org.exist-db"/>
+                <attribute name="Implementation-URL" value="https://github.com/exist-db/exist"/>
+
+                <attribute name="Specification-Title" value="${project.name} Bootstrap"/>
+                <attribute name="Specification-Version" value="${project.version}"/>
+                <attribute name="Specification-Vendor" value="The eXist Project"/>
+
+                <attribute name="Source-Repository" value="scm:git:https://github.com/exist-db/exist.git"/>
+                <attribute name="Git-Commit" value="${git.revision.full}"/>
+                <attribute name="Git-Commit-Abbrev" value="${git.revision}"/>
+                <attribute name="Build-Tag" value="${git.branch.full}"/>
+                <attribute name="Build-Timestamp" value="${DSTAMP}${TSTAMP}"/>
+                <attribute name="Built-By" value="${user.name}"/>
+                <attribute name="Build-Jdk" value="${java.version}"/>
+
+                <attribute name="Description" value="eXist XML Native Database"/>
+                <attribute name="Created-By" value="${ant.version}"/>
+            </manifest>
+            <fileset dir="${module.exist-core}/src/main/java" >
+                <include name="org/exist/start/**"/>
+            </fileset>
+            <fileset dir="${module.exist-core}/src/main/resources" >
+                <include name="org/exist/start/**"/>
+            </fileset>
         </jar>
 
         <echo message="Creating exist-optional.jar ..."/>
@@ -526,6 +609,54 @@
             <include name="org/exist/xquery/functions/response/**"/>
             <include name="org/exist/xquery/functions/session/**"/>
         </jar>
+        <jar compress="true" jarfile="exist-optional-sources.jar">
+            <manifest>
+                <attribute name="Implementation-Title" value="${project.name} Optional"/>
+                <attribute name="Implementation-Version" value="${project.version}"/>
+                <attribute name="Implementation-Vendor" value="The eXist Project"/>
+                <attribute name="Implementation-Vendor-Id" value="org.exist-db"/>
+                <attribute name="Implementation-URL" value="https://github.com/exist-db/exist"/>
+
+                <attribute name="Specification-Title" value="${project.name} Optional"/>
+                <attribute name="Specification-Version" value="${project.version}"/>
+                <attribute name="Specification-Vendor" value="The eXist Project"/>
+
+                <attribute name="Source-Repository" value="scm:git:https://github.com/exist-db/exist.git"/>
+                <attribute name="Git-Commit" value="${git.revision.full}"/>
+                <attribute name="Git-Commit-Abbrev" value="${git.revision}"/>
+                <attribute name="Build-Tag" value="${git.branch.full}"/>
+                <attribute name="Build-Timestamp" value="${DSTAMP}${TSTAMP}"/>
+                <attribute name="Built-By" value="${user.name}"/>
+                <attribute name="Build-Jdk" value="${java.version}"/>
+
+                <attribute name="Description" value="eXist XML Native Database"/>
+                <attribute name="Created-By" value="${ant.version}"/>
+            </manifest>
+            <fileset dir="${module.exist-core}/src/main/java" >
+                <include name="org/exist/*.xsl"/>
+                <include name="org/exist/ant/**"/>
+                <include name="org/exist/http/**"/>
+                <include name="org/exist/jetty/**"/>
+                <include name="org/exist/jsp/**"/>
+                <include name="org/exist/soap/**"/>
+                <include name="org/exist/webstart/**"/>
+                <include name="org/exist/xquery/functions/request/**"/>
+                <include name="org/exist/xquery/functions/response/**"/>
+                <include name="org/exist/xquery/functions/session/**"/>
+            </fileset>
+            <fileset dir="${module.exist-core}/src/main/resources" >
+                <include name="org/exist/*.xsl"/>
+                <include name="org/exist/ant/**"/>
+                <include name="org/exist/http/**"/>
+                <include name="org/exist/jetty/**"/>
+                <include name="org/exist/jsp/**"/>
+                <include name="org/exist/soap/**"/>
+                <include name="org/exist/webstart/**"/>
+                <include name="org/exist/xquery/functions/request/**"/>
+                <include name="org/exist/xquery/functions/response/**"/>
+                <include name="org/exist/xquery/functions/session/**"/>
+            </fileset>
+        </jar>
 
         <echo message="Creating exist-testkit.jar ..."/>
         <jar compress="true" jarfile="exist-testkit.jar">
@@ -552,6 +683,46 @@
                 <attribute name="Created-By" value="${ant.version}"/>
             </manifest>
             <fileset dir="${module.exist-testkit}/${build.classes}">
+                <include name="org/exist/ant/**"/>
+                <include name="org/exist/TestUtils.class"/>
+                <include name="org/exist/test/**"/>
+                <include name="xquery/TestRunner.class"/>
+                <include name="xquery/TestRunnerMain.class"/>
+                <include name="org/exist/xquery/lib/xqsuite/xqsuite.xql"/>
+            </fileset>
+        </jar>
+        <jar compress="true" jarfile="exist-testkit-sources.jar">
+            <manifest>
+                <attribute name="Implementation-Title" value="${project.name} Test Kit"/>
+                <attribute name="Implementation-Version" value="${project.version}"/>
+                <attribute name="Implementation-Vendor" value="The eXist Project"/>
+                <attribute name="Implementation-Vendor-Id" value="org.exist-db"/>
+                <attribute name="Implementation-URL" value="https://github.com/exist-db/exist"/>
+
+                <attribute name="Specification-Title" value="${project.name} Test Kit"/>
+                <attribute name="Specification-Version" value="${project.version}"/>
+                <attribute name="Specification-Vendor" value="The eXist Project"/>
+
+                <attribute name="Source-Repository" value="scm:git:https://github.com/exist-db/exist.git"/>
+                <attribute name="Git-Commit" value="${git.revision.full}"/>
+                <attribute name="Git-Commit-Abbrev" value="${git.revision}"/>
+                <attribute name="Build-Tag" value="${git.branch.full}"/>
+                <attribute name="Build-Timestamp" value="${DSTAMP}${TSTAMP}"/>
+                <attribute name="Built-By" value="${user.name}"/>
+                <attribute name="Build-Jdk" value="${java.version}"/>
+
+                <attribute name="Description" value="eXist XML Native Database Test Kit"/>
+                <attribute name="Created-By" value="${ant.version}"/>
+            </manifest>
+            <fileset dir="${module.exist-core}/src/main/java" >
+                <include name="org/exist/ant/**"/>
+                <include name="org/exist/TestUtils.class"/>
+                <include name="org/exist/test/**"/>
+                <include name="xquery/TestRunner.class"/>
+                <include name="xquery/TestRunnerMain.class"/>
+                <include name="org/exist/xquery/lib/xqsuite/xqsuite.xql"/>
+            </fileset>
+            <fileset dir="${module.exist-core}/src/main/resources" >
                 <include name="org/exist/ant/**"/>
                 <include name="org/exist/TestUtils.class"/>
                 <include name="org/exist/test/**"/>

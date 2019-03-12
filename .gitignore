@@ -13,9 +13,12 @@ descriptor.xml
 dist/
 examples.jar
 exist-optional.jar
+exist-optional-sources.jar
 exist-testkit.jar
+exist-testkit-sources.jar
 eXist.iws
 exist.jar
+exist-sources.jar
 extensions/**/build/
 extensions/contentextraction/lib/
 extensions/debuggee/lib
@@ -55,6 +58,7 @@ nbproject/build/
 nbproject/private/
 Project_Default.xml
 start.jar
+start-sources.jar
 target/
 test/external/
 test/junit/
