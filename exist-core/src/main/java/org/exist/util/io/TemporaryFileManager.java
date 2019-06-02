@@ -32,6 +32,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.concurrent.*;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -39,100 +44,148 @@ import org.exist.util.FileUtils;
 
 /**
  * Temporary File Manager.
- *
+ * <p>
  * Provides temporary files for use by eXist-db and deals with cleaning them
  * up.
- *
+ * <p>
  * Previously when returning a temporary file if it could not be deleted
  * (which often occurred on Microsoft Windows) we would add it to a queue
  * for reuse the next time a temporary file was required.
- *
+ * <p>
  * On Microsoft Windows platforms this was shown to be unreliable. If the
  * temporary file had been Memory Mapped, there would be a lingering open file
  * handle which would only be closed when the GC reclaims the ByteBuffer
  * objects resulting from the mapping. This exhibited two problems:
- *     1. The previously memory mapped file could only be reused for further
- *         memory mapped I/O. Any traditional I/O or file system operations
- *         (e.g. copy, move, etc.) would result in a
- *         java.nio.file.FileSystemException.
- *     2. Keeping the previously memory mapped file in a queue, may result in
- *     strong indirect references to the ByteBuffer objects meaning that they
- *     will never be subject to GC, and therefore the file handles would never
- *     be released.
+ * 1. The previously memory mapped file could only be reused for further
+ * memory mapped I/O. Any traditional I/O or file system operations
+ * (e.g. copy, move, etc.) would result in a
+ * java.nio.file.FileSystemException.
+ * 2. Keeping the previously memory mapped file in a queue, may result in
+ * strong indirect references to the ByteBuffer objects meaning that they
+ * will never be subject to GC, and therefore the file handles would never
+ * be released.
  * As such, we now never recycle temporary file objects. Instead we rely on the
  * GC to eventually close the file handles of any previously memory mapped files
  * and the Operating System to manage it's temporary file space.
- *
+ * <p>
  * Relevant articles on the above described problems are:
- *     1.https://bugs.java.com/view_bug.do?bug_id=4715154
- *     2. https://bugs.openjdk.java.net/browse/JDK-8028683
- *     3. https://bugs.java.com/view_bug.do?bug_id=4724038
- *
- * @version 2.0
+ * 1.https://bugs.java.com/view_bug.do?bug_id=4715154
+ * 2. https://bugs.openjdk.java.net/browse/JDK-8028683
+ * 3. https://bugs.java.com/view_bug.do?bug_id=4724038
  *
  * @author Adam Retter <adam.retter@googlemail.com>
+ * @version 2.0
  */
 public class TemporaryFileManager {
-
-    private final static Log LOG = LogFactory.getLog(TemporaryFileManager.class);
-
+    private static final Log LOG = LogFactory.getLog(TemporaryFileManager.class);
     private static final String FOLDER_PREFIX = "exist-db-temp-file-manager";
     private static final String FILE_PREFIX = "exist-db-temp";
     private static final String LOCK_FILENAME = FOLDER_PREFIX + ".lck";
-    private final Path tmpFolder;
-    private final FileChannel lockChannel;
 
     private static final TemporaryFileManager instance = new TemporaryFileManager();
+
+    private final Path tmpFolder;
+    private final FileChannel lockChannel;
+    private final Set<Path> active;
+    private final ScheduledExecutorService deleteExecutor;
 
     public static TemporaryFileManager getInstance() {
         return instance;
     }
 
     private TemporaryFileManager() {
-        cleanupOldTempFolders();
-
-        try {
-            this.tmpFolder = Files.createTempDirectory(FOLDER_PREFIX + '-');
-            this.lockChannel = FileChannel.open(tmpFolder.resolve(LOCK_FILENAME), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.DELETE_ON_CLOSE);
-            lockChannel.lock();
-        } catch(final IOException ioe) {
-            throw new RuntimeException("Unable to create temporary folder", ioe);
-        }
-
         /*
         Add hook to JVM to delete the file on exit
         unfortunately this does not always work on all (e.g. Windows) platforms
         will be recovered on restart by cleanupOldTempFolders
          */
-        tmpFolder.toFile().deleteOnExit();
+        Runtime.getRuntime().addShutdownHook(new Thread(this::cleanUp, "TemporaryFileManagerCleanup"));
 
-        LOG.info("Temporary folder is: " + tmpFolder.toAbsolutePath().toString());
+        cleanupOldTempFolders();
+
+        try {
+            this.tmpFolder = Files.createTempDirectory(FOLDER_PREFIX + '-');
+            this.lockChannel = FileChannel.open(tmpFolder.resolve(LOCK_FILENAME), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.DELETE_ON_CLOSE);
+            this.active = ConcurrentHashMap.newKeySet();
+            this.deleteExecutor = Executors.newSingleThreadScheduledExecutor();
+            lockChannel.lock();
+        } catch (final IOException ioe) {
+            throw new RuntimeException("Unable to create temporary folder", ioe);
+        }
+
+        LOG.info("Temporary folder is: " + tmpFolder);
     }
 
     public final Path getTemporaryFile() throws IOException {
         final Path tempFile = Files.createTempFile(tmpFolder, FILE_PREFIX + '-', ".tmp");
-
         /*
         add hook to JVM to delete the file on exit
         unfortunately this does not always work on all (e.g. Windows) platforms
          */
-        tempFile.toFile().deleteOnExit();
-
+        active.add(tempFile);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Created temporary file: " + tempFile);
+        }
         return tempFile;
     }
 
     public void returnTemporaryFile(final Path tempFile) {
+        removeFile(tempFile, () -> active.remove(tempFile), this::retryDelete);
+    }
+
+    /**
+     * Cleans up all open temporary files as well as the temporary root folder and releases the active lock
+     */
+    private void cleanUp() {
+        if (tmpFolder != null) {
+            for (Iterator<Path> tempFileIt = active.iterator(); tempFileIt.hasNext(); ) {
+                removeFile(tempFileIt.next(), () -> tempFileIt.remove(), this::logError);
+            }
+            LOG.info("Release temp folder " + tmpFolder);
+            //try and remove our temporary folder
+            FileUtils.deleteQuietly(tmpFolder);
+        }
+        if (lockChannel != null) {
+            LOG.info("Release lock temp folder lock");
+            try {
+                // will release the lock on the lock file, and the lock file should be deleted
+                lockChannel.close();
+            } catch (IOException e) {
+                LOG.error("Unable to release lock", e);
+            }
+        }
+    }
+
+    /**
+     * Removes the given {@code tempFile} and call the given {@code postDeleteAction} after
+     * the file has been deleted successfully or the file does no longer exist.
+     *
+     * @param tempFile         the temporary file to be deleted
+     * @param postDeleteAction the action called upon successful deletion
+     */
+    private void removeFile(Path tempFile, Runnable postDeleteAction, BiConsumer<IOException, Path> failureConsumer) {
         try {
             if (Files.deleteIfExists(tempFile)) {
                 if (LOG.isDebugEnabled()) {
-                    LOG.debug("Deleted temporary file: " + tempFile.toAbsolutePath().toString());
+                    LOG.debug("Deleted temporary file: " + tempFile);
                 }
             }
-        } catch (final IOException e) {
+            if (postDeleteAction!=null) {
+                postDeleteAction.run();
+            }
+        } catch (IOException ioe) {
             // this can often occur on Microsoft Windows (especially if the file was memory mapped!) :-/
-            LOG.warn("Unable to delete temporary file: " + tempFile.toAbsolutePath().toString() + " due to: "
-                    + e.getMessage());
+            failureConsumer.accept(ioe, tempFile);
         }
+    }
+
+    private void logError(IOException ioe, Path tempFile) {
+        LOG.warn("Unable to delete temporary file: " + tempFile + " due to: " + ioe.getMessage());
+    }
+
+    private void retryDelete(IOException ioe, Path tempFile) {
+        LOG.warn("Unable to delete temporary file: " + tempFile + " due to: " + ioe.getMessage() + " - retry in 5 seconds");
+        deleteExecutor.schedule(() -> removeFile(tempFile, null, this::retryDelete), 5, TimeUnit.SECONDS);
     }
 
     /**
@@ -144,9 +197,9 @@ public class TemporaryFileManager {
         final Path tmpDir = Paths.get(System.getProperty("java.io.tmpdir"));
 
         try {
-            for(final Path dir : FileUtils.list(tmpDir, path -> Files.isDirectory(path) && path.startsWith(FOLDER_PREFIX))) {
+            for (final Path dir : FileUtils.list(tmpDir, path -> Files.isDirectory(path) && path.startsWith(FOLDER_PREFIX))) {
                 final Path lockPath = dir.resolve(LOCK_FILENAME);
-                if(!Files.exists(lockPath)) {
+                if (!Files.exists(lockPath)) {
                     // no lock file present, so not in use
                     FileUtils.deleteQuietly(dir);
                 } else {
@@ -164,20 +217,8 @@ public class TemporaryFileManager {
                     }
                 }
             }
-        } catch(final IOException ioe) {
+        } catch (final IOException ioe) {
             LOG.warn("Unable to delete old temporary folders", ioe);
-        }
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        try {
-            lockChannel.close();  // will release the lock on the lock file, and the lock file should be deleted
-
-            //try and remove our temporary folder
-            FileUtils.deleteQuietly(tmpFolder);
-        } finally {
-            super.finalize();
         }
     }
 }

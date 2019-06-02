@@ -130,6 +130,10 @@
     
     <Loggers>
 
+        <Logger name="org.exist.util.io.TemporaryFileManager" additivity="false" level="debug">
+            <AppenderRef ref="exist.core"/>
+        </Logger>
+
         <Logger name="org.exist.util.sanity.SanityCheck" additivity="false" level="info">    <!-- set to level="trace" to enable all sanity check logging -->
             <AppenderRef ref="exist.core"/>
         </Logger>
