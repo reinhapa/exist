@@ -28,6 +28,7 @@ package org.exist.util.io;
 
 import java.io.IOException;
 import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -37,6 +38,7 @@ import java.util.Set;
 import java.util.concurrent.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -141,9 +143,6 @@ public class TemporaryFileManager {
             for (Iterator<Path> tempFileIt = active.iterator(); tempFileIt.hasNext(); ) {
                 removeFile(tempFileIt.next(), () -> tempFileIt.remove(), this::logError);
             }
-            LOG.info("Release temp folder " + tmpFolder);
-            //try and remove our temporary folder
-            FileUtils.deleteQuietly(tmpFolder);
         }
         if (lockChannel != null) {
             LOG.info("Release lock temp folder lock");
@@ -153,6 +152,13 @@ public class TemporaryFileManager {
             } catch (IOException e) {
                 LOG.error("Unable to release lock", e);
             }
+        }
+        LOG.info("Release temp folder " + tmpFolder);
+        try {
+            //try and remove our temporary folder
+            Files.delete(tmpFolder);
+        } catch (IOException e) {
+            LOG.error("Unable to release lock", e);
         }
     }
 
@@ -170,7 +176,7 @@ public class TemporaryFileManager {
                     LOG.debug("Deleted temporary file: " + tempFile);
                 }
             }
-            if (postDeleteAction!=null) {
+            if (postDeleteAction != null) {
                 postDeleteAction.run();
             }
         } catch (IOException ioe) {
@@ -195,30 +201,35 @@ public class TemporaryFileManager {
      */
     private void cleanupOldTempFolders() {
         final Path tmpDir = Paths.get(System.getProperty("java.io.tmpdir"));
-
-        try {
-            for (final Path dir : FileUtils.list(tmpDir, path -> Files.isDirectory(path) && path.startsWith(FOLDER_PREFIX))) {
+        try (Stream<Path> pathStream = Files.list(tmpDir)) {
+            pathStream.filter(path -> Files.isDirectory(path) && path.getFileName().toString().startsWith(FOLDER_PREFIX)).forEach(dir -> {
                 final Path lockPath = dir.resolve(LOCK_FILENAME);
-                if (!Files.exists(lockPath)) {
-                    // no lock file present, so not in use
-                    FileUtils.deleteQuietly(dir);
-                } else {
-                    // there is a lock file present, we must determine if it is locked (by another eXist-db instance)
-                    final FileChannel otherLockChannel = FileChannel.open(lockPath, StandardOpenOption.WRITE);
-                    try {
-                        if (otherLockChannel.tryLock() != null) {
-                            // not locked... so we now have the lock
-
-                            FileUtils.deleteQuietly(dir);
+                try {
+                    // check for lock first
+                    if (Files.exists(lockPath)) {
+                        try (FileChannel otherLockChannel = FileChannel.open(lockPath, StandardOpenOption.WRITE)) {
+                            FileLock fileLock = otherLockChannel.tryLock();
+                            if (fileLock == null) {
+                                // locked... so we now have the lock
+                                LOG.warn("Temporary folder " + dir + " still locked - skipping");
+                                return;
+                            }
+                            fileLock.release();
                         }
-                    } finally {
-                        // will release the lock
-                        otherLockChannel.close();
                     }
+                    // delete all files (including closed lock file) now
+                    try (Stream<Path> tempPathStream = Files.list(dir)) {
+                        tempPathStream.forEach(tempFile -> removeFile(tempFile, null, this::logError));
+                    }
+                    // delete temporary folder itself
+                    Files.delete(dir);
+                    LOG.info("Removed old temporary folder " + dir);
+                } catch (IOException e) {
+                    LOG.warn("Unable to delete old temporary folder " + dir, e);
                 }
-            }
+            });
         } catch (final IOException ioe) {
-            LOG.warn("Unable to delete old temporary folders", ioe);
+            LOG.warn("Unable to list temp folder " + tmpDir, ioe);
         }
     }
 }
