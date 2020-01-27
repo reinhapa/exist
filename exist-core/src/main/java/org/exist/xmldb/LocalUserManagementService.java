@@ -559,15 +559,6 @@ public class LocalUserManagementService extends AbstractLocalService implements 
         final Account account = new UserAider(u.getName());
         lockResource(res, account);
     }
-        
-    @Override
-    public String getProperty(final String property) throws XMLDBException {
-        return null;
-    }
-    
-    @Override
-    public void setProperty(final String property, final String value) throws XMLDBException {
-    }
 
     /**
      * Executes a LocalXmldbFunction only if the supplied user is an Admin user

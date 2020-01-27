@@ -19,12 +19,25 @@
  */
 package org.exist.xmldb;
 
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Properties;
+
+import javax.annotation.Nullable;
+
 import org.apache.commons.io.output.CountingOutputStream;
 import org.apache.commons.io.output.NullOutputStream;
 import org.exist.dom.persistent.BinaryDocument;
 import org.exist.security.Subject;
 import org.exist.storage.BrokerPool;
+import org.exist.storage.DBBroker;
 import org.exist.storage.blob.BlobId;
+import org.exist.storage.txn.Txn;
 import org.exist.util.EXistInputSource;
 import org.exist.util.FileUtils;
 import org.exist.util.crypto.digest.DigestType;
@@ -39,17 +52,6 @@ import org.xmldb.api.base.ErrorCodes;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.BinaryResource;
 
-import javax.annotation.Nullable;
-import java.io.BufferedOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.FileOutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Properties;
-import org.exist.storage.DBBroker;
-import org.exist.storage.txn.Txn;
 import com.evolvedbinary.j8fu.function.SupplierE;
 
 public class LocalBinaryResource extends AbstractEXistResource implements ExtendedResource, EXistBinaryResource, EXistResource {
@@ -233,6 +235,11 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
             }
             return null;
         });
+    }
+
+    @Override
+    public void getContentAsStream(OutputStream os) throws XMLDBException {
+      getContentIntoAStream(os);
     }
 
     @Override

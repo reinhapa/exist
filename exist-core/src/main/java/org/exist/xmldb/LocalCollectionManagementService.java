@@ -96,11 +96,6 @@ public class LocalCollectionManagementService extends AbstractLocalService imple
     }
 
     @Override
-    public String getProperty(final String property ) {
-        return null;
-    }
-
-    @Override
     public void removeCollection(final String collName) throws XMLDBException {
     	try{
     		removeCollection(XmldbURI.xmldbUriFor(collName));
@@ -302,10 +297,6 @@ public class LocalCollectionManagementService extends AbstractLocalService imple
         );
     }
 
-    @Override
-    public void setProperty(final String property, final String value) {
-    }
-	
     @Override
     public void runCommand(final String[] params) throws XMLDBException {
     	withDb((broker, transaction) -> {

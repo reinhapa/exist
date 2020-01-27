@@ -21,8 +21,6 @@ package org.exist.xmldb;
 
 import java.util.*;
 import java.util.stream.Stream;
-import org.apache.xmlrpc.XmlRpcException;
-import org.apache.xmlrpc.client.XmlRpcClient;
 import org.exist.security.Group;
 import org.exist.security.Permission;
 import org.exist.security.Account;
@@ -474,6 +472,11 @@ public class RemoteUserManagementService extends AbstractRemote implements EXist
     @Override
     public String getProperty(final String name) throws XMLDBException {
         return null;
+    }
+
+    @Override
+    public String getProperty(String name, String defaultValue) throws XMLDBException {
+        return defaultValue;
     }
 
     @Override

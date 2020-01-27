@@ -22,8 +22,16 @@ package org.exist.xmldb;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.Random;
+
 import javax.xml.transform.OutputKeys;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
@@ -43,18 +51,20 @@ import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.sync.Sync;
 import org.exist.storage.txn.Txn;
 import org.exist.util.HtmlToXmlParser;
-import com.evolvedbinary.j8fu.Either;
-import com.evolvedbinary.j8fu.function.FunctionE;
 import org.exist.xmldb.function.LocalXmldbCollectionFunction;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
-import org.xmldb.api.base.ErrorCodes;
-import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.Service;
-import org.xmldb.api.base.XMLDBException;
+import org.xmldb.api.base.*;
 import org.xmldb.api.modules.BinaryResource;
+import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
+import org.xmldb.api.modules.XPathQueryService;
+import org.xmldb.api.modules.XQueryService;
+import org.xmldb.api.modules.XUpdateQueryService;
+
+import com.evolvedbinary.j8fu.Either;
+import com.evolvedbinary.j8fu.function.FunctionE;
 
 /**
  *  A local implementation of the Collection interface. This
@@ -198,33 +208,41 @@ public class LocalCollection extends AbstractLocal implements EXistCollection {
     }
 
     @Override
+    public Identifier createIdentifier() throws XMLDBException {
+        //TODO:pr search for a way to implement
+        throw new XMLDBException(ErrorCodes.NOT_IMPLEMENTED);
+    }
+
+    @Override
     public Resource createResource(String id, final String type) throws XMLDBException {
-        if(id == null) {
+        switch(type) {
+            case XMLResource.RESOURCE_TYPE:
+                return createResource(id, XMLResource.class);
+            case BinaryResource.RESOURCE_TYPE:
+                return createResource(id, BinaryResource.class);
+            default:
+                throw new XMLDBException(ErrorCodes.INVALID_RESOURCE, "Unknown resource type: " + type);
+        }
+    }
+
+    @Override
+    public <R extends Resource> R createResource(String id, Class<R> type) throws XMLDBException {
+        if (id == null) {
             id = createId();
         }
-        
         final XmldbURI idURI;
         try {
             idURI = XmldbURI.xmldbUriFor(id);
         } catch(final URISyntaxException e) {
             throw new XMLDBException(ErrorCodes.INVALID_URI,e);
         }
-        final Resource r;
-        switch(type) {
-            case XMLResource.RESOURCE_TYPE:
-                r = new LocalXMLResource(user, brokerPool, this, idURI);
-                break;
-
-            case BinaryResource.RESOURCE_TYPE:
-                r = new LocalBinaryResource(user, brokerPool, this, idURI);
-                break;
-
-            default:
-                throw new XMLDBException(ErrorCodes.INVALID_RESOURCE, "Unknown resource type: " + type);
+        if (XMLResource.class.isAssignableFrom(type)) {
+            return (R)new LocalXMLResource(user, brokerPool, this, idURI);
+        } else if (BinaryResource.class.isAssignableFrom(type)) {
+            return (R)new LocalBinaryResource(user, brokerPool, this, idURI);
+        } else {
+            throw new XMLDBException(ErrorCodes.INVALID_RESOURCE, "Unknown resource type: " + type);
         }
-        
-        ((AbstractEXistResource)r).isNewResource = true;
-        return r;
     }
 
     @Override
@@ -413,6 +431,27 @@ public class LocalCollection extends AbstractLocal implements EXistCollection {
     }
 
     @Override
+    public <S extends Service> S getService(Class<S> type) throws XMLDBException {
+        Service service = null;
+        if (XPathQueryService.class.isAssignableFrom(type) || XQueryService.class.isAssignableFrom(type)) {
+            service = new LocalXPathQueryService(user, brokerPool, this);
+        } else if (CollectionManagementService.class.isAssignableFrom(type)) {
+            service = new LocalCollectionManagementService(user, brokerPool, this);
+        } else if (UserManagementService.class.isAssignableFrom(type)) {
+            service = new LocalUserManagementService(user, brokerPool, this);
+        } else if (DatabaseInstanceManager.class.isAssignableFrom(type)) {
+            service = new LocalDatabaseInstanceManager(user, brokerPool);
+        } else if (XUpdateQueryService.class.isAssignableFrom(type)) {
+            service = new LocalXUpdateQueryService(user, brokerPool, this);
+        } else if (IndexQueryService.class.isAssignableFrom(type)) {
+            service = new LocalIndexQueryService(user, brokerPool, this);
+        } else {
+            throw new XMLDBException(ErrorCodes.NO_SUCH_SERVICE);
+        }
+        return (S)service;
+    }
+
+    @Override
     public Service[] getServices() throws XMLDBException {
         final Service[] services = {
                 new LocalXPathQueryService(user, brokerPool, this),
@@ -536,6 +575,7 @@ public class LocalCollection extends AbstractLocal implements EXistCollection {
         return properties.getProperty(property);
     }
 
+    @Override
     public String getProperty(final String property, final String defaultValue) throws XMLDBException {
         return properties.getProperty(property, defaultValue);
     }

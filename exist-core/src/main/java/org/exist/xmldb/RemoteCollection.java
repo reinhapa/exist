@@ -19,26 +19,7 @@
  */
 package org.exist.xmldb;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.xmlrpc.XmlRpcException;
-import org.apache.xmlrpc.client.XmlRpcClient;
-import org.exist.security.Permission;
-import org.exist.security.PermissionDeniedException;
-import org.exist.security.internal.aider.ACEAider;
-import org.exist.storage.blob.BlobId;
-import org.exist.util.Compressor;
-import org.exist.util.EXistInputSource;
-import org.exist.util.FileUtils;
-import org.exist.util.Leasable;
-import org.exist.util.crypto.digest.DigestType;
-import org.exist.util.crypto.digest.MessageDigest;
-import org.exist.util.io.FastByteArrayInputStream;
-import org.xml.sax.InputSource;
-import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.*;
-import org.xmldb.api.modules.BinaryResource;
-import org.xmldb.api.modules.XMLResource;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -57,7 +38,29 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Stream;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.xmlrpc.XmlRpcException;
+import org.apache.xmlrpc.client.XmlRpcClient;
+import org.exist.security.Permission;
+import org.exist.security.PermissionDeniedException;
+import org.exist.security.internal.aider.ACEAider;
+import org.exist.storage.blob.BlobId;
+import org.exist.util.Compressor;
+import org.exist.util.EXistInputSource;
+import org.exist.util.FileUtils;
+import org.exist.util.Leasable;
+import org.exist.util.crypto.digest.DigestType;
+import org.exist.util.crypto.digest.MessageDigest;
+import org.exist.util.io.FastByteArrayInputStream;
+import org.xml.sax.InputSource;
+import org.xmldb.api.base.*;
+import org.xmldb.api.modules.BinaryResource;
+import org.xmldb.api.modules.CollectionManagementService;
+import org.xmldb.api.modules.XMLResource;
+import org.xmldb.api.modules.XPathQueryService;
+import org.xmldb.api.modules.XQueryService;
+import org.xmldb.api.modules.XUpdateQueryService;
 
 /**
  * A remote implementation of the Collection interface. This implementation
@@ -145,13 +148,31 @@ public class RemoteCollection extends AbstractRemote implements EXistCollection 
     }
 
     @Override
+    public Identifier createIdentifier() throws XMLDBException {
+        //TODO:pr search for a way to implement
+        throw new XMLDBException(ErrorCodes.NOT_IMPLEMENTED);
+    }
+
+    @Override
     public Resource createResource(final String id, final String type) throws XMLDBException {
+        switch(type) {
+            case XMLResource.RESOURCE_TYPE:
+                return createResource(id, XMLResource.class);
+            case BinaryResource.RESOURCE_TYPE:
+                return createResource(id, BinaryResource.class);
+            default:
+                throw new XMLDBException(ErrorCodes.INVALID_RESOURCE, "Unknown resource type: " + type);
+        }
+    }
+
+    @Override
+    public <R extends Resource> R createResource(String id, Class<R> type) throws XMLDBException {
         try {
             final XmldbURI newId = (id == null) ? XmldbURI.xmldbUriFor(createId()) : XmldbURI.xmldbUriFor(id);
-            if (XMLResource.RESOURCE_TYPE.equals(type)) {
-                return new RemoteXMLResource(this, -1, -1, newId, Optional.empty());
-            } else if (BinaryResource.RESOURCE_TYPE.equals(type)) {
-                return new RemoteBinaryResource(this, newId);
+            if (XMLResource.class.isAssignableFrom(type)) {
+                return (R)new RemoteXMLResource(this, -1, -1, newId, Optional.empty());
+            } else if (BinaryResource.class.isAssignableFrom(type)) {
+                return (R)new RemoteBinaryResource(this, newId);
             } else {
                 throw new XMLDBException(ErrorCodes.UNKNOWN_RESOURCE_TYPE, "Unknown resource type: " + type);
             }
@@ -215,6 +236,11 @@ public class RemoteCollection extends AbstractRemote implements EXistCollection 
         return properties.getProperty(property);
     }
 
+    @Override
+    public String getProperty(String name, String defaultValue) throws XMLDBException {
+        return properties.getProperty(name, defaultValue);
+    }
+
     public Properties getProperties() {
         return properties;
     }
@@ -271,6 +297,27 @@ public class RemoteCollection extends AbstractRemote implements EXistCollection 
                 throw new XMLDBException(ErrorCodes.NO_SUCH_SERVICE);
         }
         return service;
+    }
+
+    @Override
+    public <S extends Service> S getService(Class<S> type) throws XMLDBException {
+        Service service = null;
+        if (XPathQueryService.class.isAssignableFrom(type) || XQueryService.class.isAssignableFrom(type)) {
+            service = new RemoteXPathQueryService(leasableXmlRpcClient, this);
+        } else if (CollectionManagementService.class.isAssignableFrom(type)) {
+            service = new RemoteCollectionManagementService(this);
+        } else if (UserManagementService.class.isAssignableFrom(type)) {
+            service = new RemoteUserManagementService(this);
+        } else if (DatabaseInstanceManager.class.isAssignableFrom(type)) {
+            service = new RemoteDatabaseInstanceManager(this::execute);
+        } else if (XUpdateQueryService.class.isAssignableFrom(type)) {
+            service = new RemoteIndexQueryService(this);
+        } else if (IndexQueryService.class.isAssignableFrom(type)) {
+            service = new RemoteXUpdateQueryService(this);
+        } else {
+            throw new XMLDBException(ErrorCodes.NO_SUCH_SERVICE);
+        }
+        return (S)service;
     }
 
     @Override

@@ -385,6 +385,11 @@ public class DatabaseImpl implements Database {
 
     @Override
     public String getProperty(final String property) throws XMLDBException {
+        return getProperty(property, null);
+    }
+
+    @Override
+    public String getProperty(final String property, final String defaultValue) throws XMLDBException {
         final String value;
         switch(property) {
             case CREATE_DATABASE:
@@ -420,7 +425,7 @@ public class DatabaseImpl implements Database {
                 break;
 
             default:
-                value = null;
+                value = defaultValue;
         }
         return value;
     }

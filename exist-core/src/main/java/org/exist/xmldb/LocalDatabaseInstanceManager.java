@@ -95,13 +95,4 @@ public class LocalDatabaseInstanceManager extends AbstractLocalService implement
     public boolean isLocalInstance() {
         return true;
     }
-
-    @Override
-    public String getProperty(final String name) throws XMLDBException {
-        return null;
-    }
-
-    @Override
-    public void setProperty(final String name, final String value) throws XMLDBException {
-    }
 }

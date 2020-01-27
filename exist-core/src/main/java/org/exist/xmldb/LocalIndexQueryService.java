@@ -115,12 +115,4 @@ public class LocalIndexQueryService extends AbstractLocalService implements Inde
     	return this.<Occurrences[]>read(collection.getPathURI()).apply((collection, broker, transaction) -> broker.getElementIndex().scanIndexedElements(collection, inclusive));
     }
 
-    @Override
-    public String getProperty(final String name) throws XMLDBException {
-        return null;
-    }
-
-    @Override
-    public void setProperty(final String name, final String value) throws XMLDBException {
-    }
 }

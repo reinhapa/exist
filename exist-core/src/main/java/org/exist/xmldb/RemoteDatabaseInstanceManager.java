@@ -89,6 +89,11 @@ public class RemoteDatabaseInstanceManager implements DatabaseInstanceManager {
     }
 
     @Override
+    public String getProperty(String name, String defaultValue) throws XMLDBException {
+        return defaultValue;
+    }
+
+    @Override
     public void setProperty(final String name, final String value) throws XMLDBException {
     }
 

@@ -40,7 +40,6 @@ import org.exist.xmldb.function.LocalXmldbFunction;
 import org.exist.xquery.value.AnyURIValue;
 import org.exist.xquery.value.BinaryValue;
 import org.exist.xquery.value.Sequence;
-import org.exist.xquery.value.SequenceIterator;
 import org.w3c.dom.Node;
 import org.xmldb.api.base.*;
 import org.xmldb.api.base.Collection;
@@ -103,8 +102,13 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
     }
 
     @Override
-    public String getProperty(final String property) throws XMLDBException {
-        return properties.getProperty(property);
+    public String getProperty(final String name, final String defaultValue) throws XMLDBException {
+        return properties.getProperty(name, defaultValue);
+    }
+
+    @Override
+    public void setProperty(final String property, final String value) throws XMLDBException {
+        properties.setProperty(property, value);
     }
 
     @Override
@@ -457,11 +461,6 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
     @Override
     public void setNamespace(final String prefix, final String namespace) throws XMLDBException {
         namespaceDecls.put(prefix, namespace);
-    }
-
-    @Override
-    public void setProperty(final String property, final String value) throws XMLDBException {
-        properties.setProperty(property, value);
     }
 
     @Override

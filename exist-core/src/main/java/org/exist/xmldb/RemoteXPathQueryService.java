@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.*;
 
-import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.exist.source.Source;
 import org.exist.storage.serializers.EXistOutputKeys;
@@ -283,6 +282,11 @@ public class RemoteXPathQueryService extends AbstractRemote implements EXistXPat
     @Override
     public String getProperty(final String name) throws XMLDBException {
         return outputProperties.getProperty(name);
+    }
+
+    @Override
+    public String getProperty(String name, String defaultValue) throws XMLDBException {
+        return outputProperties.getProperty(name, defaultValue);
     }
 
     @Override

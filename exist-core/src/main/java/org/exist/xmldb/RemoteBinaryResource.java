@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import javax.annotation.Nullable;
+
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.exist.storage.blob.BlobId;
@@ -39,8 +41,6 @@ import org.xml.sax.ext.LexicalHandler;
 import org.xmldb.api.base.ErrorCodes;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.BinaryResource;
-
-import javax.annotation.Nullable;
 
 /**
  * @author wolf
@@ -95,6 +95,11 @@ public class RemoteBinaryResource
     public void getContentIntoAStream(final OutputStream os)
             throws XMLDBException {
         getContentIntoAStreamInternal(os, content, false, -1, -1);
+    }
+
+    @Override
+    public void getContentAsStream(OutputStream os) throws XMLDBException {
+        getContentIntoAStream(os);
     }
 
     protected String getStreamSymbolicPath() {

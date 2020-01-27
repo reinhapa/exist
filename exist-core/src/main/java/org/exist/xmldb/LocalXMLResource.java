@@ -19,15 +19,30 @@
  */
 package org.exist.xmldb;
 
-import com.evolvedbinary.j8fu.function.ConsumerE;
-import com.evolvedbinary.j8fu.tuple.Tuple3;
-import net.sf.cglib.proxy.*;
+import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.StringWriter;
+import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.stream.Stream;
+
+import javax.annotation.Nullable;
+import javax.xml.transform.TransformerException;
+
+import org.apache.commons.io.IOUtils;
+import org.exist.dom.memtree.AttrImpl;
 import org.exist.dom.memtree.DocumentImpl;
+import org.exist.dom.memtree.NodeImpl;
 import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.persistent.StoredNode;
 import org.exist.dom.persistent.XMLUtil;
-import org.exist.dom.memtree.AttrImpl;
-import org.exist.dom.memtree.NodeImpl;
 import org.exist.numbering.NodeId;
 import org.exist.security.Subject;
 import org.exist.storage.BrokerPool;
@@ -35,7 +50,6 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.Txn;
 import org.exist.util.MimeType;
-import com.evolvedbinary.j8fu.Either;
 import org.exist.util.serializer.DOMSerializer;
 import org.exist.util.serializer.DOMStreamer;
 import org.exist.util.serializer.SAXSerializer;
@@ -48,24 +62,22 @@ import org.exist.xquery.value.Type;
 import org.w3c.dom.DocumentType;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.xml.sax.*;
+import org.xml.sax.ContentHandler;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXNotRecognizedException;
+import org.xml.sax.SAXNotSupportedException;
 import org.xml.sax.ext.LexicalHandler;
 import org.xmldb.api.base.ErrorCodes;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
 
-import javax.annotation.Nullable;
-import javax.xml.transform.TransformerException;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.lang.reflect.Method;
-import java.nio.file.Path;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.stream.Stream;
+import com.evolvedbinary.j8fu.function.ConsumerE;
+import com.evolvedbinary.j8fu.tuple.Tuple3;
 
-import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
-import static java.nio.charset.StandardCharsets.UTF_8;
+import net.sf.cglib.proxy.Enhancer;
+import net.sf.cglib.proxy.MethodInterceptor;
+import net.sf.cglib.proxy.MethodProxy;
 
 /**
  * Local implementation of XMLResource.
@@ -184,6 +196,75 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
                 }
             });
             return content;
+        }
+    }
+    
+    @Override
+    public void getContentAsStream(OutputStream os) throws XMLDBException {
+        try {
+            if (content != null) {
+                os.write(content.getBytes(UTF_8));
+
+            // Case 1: content is an external DOM node
+            } else if (root != null && !(root instanceof NodeValue)) {
+                try(OutputStreamWriter writer = new OutputStreamWriter(os, UTF_8)) {
+                    final DOMSerializer serializer = new DOMSerializer(writer, getProperties());
+                    try {
+                        serializer.serialize(root);
+                        content = writer.toString();
+                    } catch (final TransformerException e) {
+                        throw new XMLDBException(ErrorCodes.INVALID_RESOURCE, e.getMessage(), e);
+                    }
+                }
+
+            // Case 2: content is an atomic value
+            } else if (value != null) {
+                try {
+                    if (Type.subTypeOf(value.getType(),Type.STRING)) {
+                        os.write(((StringValue)value).getStringValue(true).getBytes(UTF_8));
+                    } else {
+                        os.write(value.getStringValue().getBytes(UTF_8));
+                    }
+                } catch (final XPathException e) {
+                    throw new XMLDBException(ErrorCodes.INVALID_RESOURCE, e.getMessage(), e);
+                }
+
+            // Case 3: content is a file
+            } else if (file != null) {
+                Files.copy(file, os);
+            
+              // Case 4: content is an input source
+            } else if (inputSource != null) {
+                IOUtils.copy(inputSource.getByteStream(), os);
+
+              // Case 5: content is a document or internal node, we MUST serialize it
+            } else {
+                content = withDb((broker, transaction) -> {
+                    final Serializer serializer = broker.getSerializer();
+                    serializer.setUser(user);
+                    try {
+                        serializer.setProperties(getProperties());
+                        if (root != null) {
+                            return serialize(broker, saxSerializer -> saxSerializer.toSAX((NodeValue) root));
+                        } else if (proxy != null) {
+                            return serialize(broker, saxSerializer -> saxSerializer.toSAX(proxy));
+                        } else {
+                            return this.<String>read(broker, transaction).apply((document, broker1, transaction1) -> {
+                                try {
+                                    return serialize(broker, saxSerializer -> saxSerializer.toSAX(document));
+                                } catch (final SAXException e) {
+                                    throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
+                                }
+                            });
+                        }
+                    } catch (final SAXException e) {
+                        throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
+                    }
+               });
+               os.write(content.getBytes(UTF_8));
+            }
+        } catch (IOException e) {
+            throw new XMLDBException(ErrorCodes.UNKNOWN_ERROR, e.getMessage(), e);
         }
     }
 

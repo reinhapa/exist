@@ -28,12 +28,10 @@ import java.util.zip.Inflater;
 
 import com.evolvedbinary.j8fu.lazy.LazyVal;
 
-import org.apache.xmlrpc.client.XmlRpcClient;
 import org.exist.security.Permission;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.util.EXistInputSource;
 import org.exist.util.FileUtils;
-import org.exist.util.Leasable;
 import org.exist.util.io.ByteArrayContent;
 import org.exist.util.io.ContentFile;
 import org.exist.util.io.FastByteArrayInputStream;
