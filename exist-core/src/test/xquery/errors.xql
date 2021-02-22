@@ -1,3 +1,24 @@
+(:
+ : eXist-db Open Source Native XML Database
+ : Copyright (C) 2001 The eXist-db Authors
+ :
+ : info@exist-db.org
+ : http://www.exist-db.org
+ :
+ : This library is free software; you can redistribute it and/or
+ : modify it under the terms of the GNU Lesser General Public
+ : License as published by the Free Software Foundation; either
+ : version 2.1 of the License, or (at your option) any later version.
+ :
+ : This library is distributed in the hope that it will be useful,
+ : but WITHOUT ANY WARRANTY; without even the implied warranty of
+ : MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ : Lesser General Public License for more details.
+ :
+ : You should have received a copy of the GNU Lesser General Public
+ : License along with this library; if not, write to the Free Software
+ : Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ :)
 xquery version "3.1";
 
 (:~
@@ -23,7 +44,7 @@ declare function et:test2($a) {
 };
 
 declare
-    %test:assertEquals(17)
+    %test:assertEquals(38)
 function et:dynamically-called-function() {
     let $fn := function-lookup(xs:QName("et:test"), 1)
     return
@@ -35,7 +56,7 @@ function et:dynamically-called-function() {
 };
 
 declare
-    %test:assertEquals(22)
+    %test:assertEquals(43)
 function et:dynamically-called-function-path-expr() {
     let $fn := function-lookup(xs:QName("et:test2"), 1)
     return
@@ -47,7 +68,7 @@ function et:dynamically-called-function-path-expr() {
 };
 
 declare
-    %test:assertEquals(53)
+    %test:assertEquals(74)
 function et:inline-function-call() {
     let $fn := function($a) {
         $a + "bla"
@@ -61,7 +82,7 @@ function et:inline-function-call() {
 };
 
 declare
-    %test:assertEquals(17)
+    %test:assertEquals(38)
 function et:function-reference-call() {
     let $fn := et:test#1
     return
@@ -73,7 +94,7 @@ function et:function-reference-call() {
 };
 
 declare
-    %test:assertEquals(87)
+    %test:assertEquals(108)
 function et:nl-in-string-literal() {
     try {
         let $foo := "bar
@@ -92,7 +113,7 @@ function et:nl-in-string-literal() {
 };
 
 declare
-    %test:assertEquals(106)
+    %test:assertEquals(127)
 function et:nl-in-string-constructor() {
     try {
         let $foo := ``[bar
@@ -111,7 +132,7 @@ function et:nl-in-string-constructor() {
 };
 
 declare
-    %test:assertEquals(124)
+    %test:assertEquals(145)
 function et:nl-in-element-constructor() {
     try {
         let $foo :=
@@ -128,7 +149,7 @@ function et:nl-in-element-constructor() {
 };
 
 declare
-    %test:assertEquals(137)
+    %test:assertEquals(158)
 function et:nl-in-comment() {
     try {
         (: This is a
@@ -195,4 +216,159 @@ function et:compile-query-func-decl() {
     ]``
     return
         util:compile-query($query, "xmldb:exist://")
+};
+
+(: https://github.com/eXist-db/exist/issues/3450 :)
+declare
+    %test:assertEquals(229)
+function et:issue3450a() {
+    try {
+    (:
+    empty
+    :)
+        if (map { "foo": "bar" } eq 1) then "yay" else "boo"
+    } catch * {
+        $err:line-number
+    }
+};
+
+
+(: https://github.com/eXist-db/exist/issues/3450 :)
+declare
+    %test:assertEquals(241)
+function et:issue3450b() {
+    try {
+        if ("a" eq 1) then "yay" else "boo"
+    } catch * {
+        $err:line-number
+    }
+};
+
+(: https://github.com/eXist-db/exist/issues/3462 :)
+declare
+    %test:assertEquals(254)
+function et:issue3462a() {
+    try {
+        map {
+            "foo": ["bar", "baz"]
+        }[?foo eq "bar"]
+    } catch * {
+        $err:line-number
+    }
+};
+
+declare
+    %test:assertEquals(269)
+function et:issue3462b() {
+    try {
+            map {
+                "foo":
+                    map {
+                        "bar": "baz"
+                    }
+            }[?foo eq "bar"]
+    } catch * {
+        $err:line-number
+    }
+};
+
+(: https://github.com/eXist-db/exist/issues/3473 :)
+declare
+    %test:assertEquals(280)
+function et:issue3473a() {
+    try {
+        1 eq "2"
+    } catch * {
+        $err:line-number
+    }
+};
+
+(: https://github.com/eXist-db/exist/issues/3473 :)
+declare
+    %test:assertEquals(291)
+function et:issue3473b() {
+    try {
+        1 = "2"
+    } catch * {
+        $err:line-number
+    }
+};
+
+(: https://github.com/eXist-db/exist/issues/3473 :)
+declare
+    %test:assertEquals(322)
+function et:issue3473c() {
+    try {
+        let $colors :=
+                 map {
+                     "blue": "#2d7ff9",
+                     "cyan": "#18bfff",
+                     "gray": "#666",
+                     "grayDark": "666",
+                     "green": "#20c933",
+                     "greenDark": "20c933",
+                     "orange": "#ff6f2c",
+                     "pink": "#ff08c2",
+                     "pinkDark": "ff08c2",
+                     "purple": "#8b46ff",
+                     "red": "#f82b60",
+                     "redDarker": "f82b60",
+                     "teal": "#20d9d2",
+                     "yellow": "#fcb400",
+                     "yellowDark": "fcb400"
+                 }
+
+             return
+                error()
+    } catch * {
+        $err:line-number
+    }
+};
+
+(:~
+ : function type item returned in element content in sequence at runtime
+ : related to https://github.com/eXist-db/exist/issues/3474
+ :)
+declare
+    %test:assertTrue
+    %test:pending("location info still missing")
+function et:subexpression-in-enclosed-expression-evaluates-to-map() {
+    try {
+        element test { 1, map {} }
+    }
+    catch err:XQTY0105 {
+        exists($err:line-number) and
+        $err:line-number > 0 and
+        exists($err:column-number) and
+        $err:column-number > 0
+    }
+};
+
+declare
+    %test:assertTrue
+    %test:pending("location info still missing")
+function et:enclosed-expression-evaluates-to-map() {
+    try {
+        element test { ( "a", map {} )[2] }
+    }
+    catch err:XQTY0105 {
+        exists($err:line-number) and
+        $err:line-number > 0 and
+        exists($err:column-number) and
+        $err:column-number > 0
+    }
+};
+
+declare
+    %test:assertTrue
+function et:array-in-enclosed-expression-evaluates-to-map() {
+    try {
+        element test { [map {}] }
+    }
+    catch err:XQTY0105 {
+        exists($err:line-number) and
+        $err:line-number > 0 and
+        exists($err:column-number) and
+        $err:column-number > 0
+    }
 };

@@ -1,28 +1,28 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-09 Wolfgang M. Meier
- *  wolfgang@exist-db.org
- *  http://exist.sourceforge.net
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- *  $Id$
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery.functions.session;
 
 import java.util.Enumeration;
+import java.util.Optional;
 
 import org.exist.dom.QName;
 import org.exist.http.servlets.SessionWrapper;
@@ -38,6 +38,7 @@ import javax.annotation.Nonnull;
 /**
  * @author <a href="mailto:wolfgang@exist-db.org">Wolfgang Meier</a>
  * @author Loren Cahlander
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public class GetAttributeNames extends StrictSessionFunction {
     public final static FunctionSignature signature =
@@ -53,9 +54,14 @@ public class GetAttributeNames extends StrictSessionFunction {
     }
 
     @Override
-    public Sequence eval(final Sequence[] args, @Nonnull final SessionWrapper session)
-            throws XPathException {
-        final Enumeration<String> attributeNames = session.getAttributeNames();
+    public Sequence eval(final Sequence[] args, @Nonnull final SessionWrapper session) throws XPathException {
+
+        final Optional<Enumeration<String>> maybeAttributeNames = withValidSession(session, SessionWrapper::getAttributeNames);
+        if (!maybeAttributeNames.isPresent()) {
+            return Sequence.EMPTY_SEQUENCE;
+        }
+
+        final Enumeration<String> attributeNames = maybeAttributeNames.get();
         if (!attributeNames.hasMoreElements()) {
             return Sequence.EMPTY_SEQUENCE;
         }

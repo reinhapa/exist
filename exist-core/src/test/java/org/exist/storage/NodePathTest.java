@@ -1,27 +1,29 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-07 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * $Id$
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.storage;
 
-import org.junit.Test;import static org.junit.Assert.assertFalse;import static org.junit.Assert.assertTrue;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 public class NodePathTest {
 
@@ -79,4 +81,33 @@ public class NodePathTest {
         path = new NodePath(null, "//c/d");
         assertTrue(path.match(new NodePath(null, "/a/b/c/c/d")));
     }
+
+    @Test
+    public void appendFromEmpty() {
+        NodePath path = new NodePath();
+        path.append(new NodePath(null, "/a/b/c/d"));
+        assertEquals("/a/b/c/d", path.toString());
+        path.append(new NodePath(null, "/1/2/3"));
+        assertEquals("/a/b/c/d/1/2/3", path.toString());
+    }
+
+    @Test
+    public void appendFromNonEmpty() {
+        NodePath path = new NodePath(null, "/a");
+        assertEquals("/a", path.toString());
+        path.append(new NodePath(null, "/1/2/3"));
+        assertEquals("/a/1/2/3", path.toString());
+
+        path = new NodePath(null, "/a");
+        assertEquals("/a", path.toString());
+        path.append(new NodePath(null, "/1/2/3/4/5/6"));
+        assertEquals("/a/1/2/3/4/5/6", path.toString());
+
+        path = new NodePath(null, "/a/b/c/d");
+        assertEquals("/a/b/c/d", path.toString());
+        path.append(new NodePath(null, "/1/2/3"));
+        assertEquals("/a/b/c/d/1/2/3", path.toString());
+    }
+
+
 }

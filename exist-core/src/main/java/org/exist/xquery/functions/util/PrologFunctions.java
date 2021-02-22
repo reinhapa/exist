@@ -1,24 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-09 The eXist Team
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  http://exist-db.org
- *  
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
- *  
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
- *  
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *  
- *  $Id$
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery.functions.util;
 
@@ -28,17 +27,13 @@ import org.exist.dom.QName;
 import org.exist.xquery.*;
 import org.exist.xquery.Module;
 import org.exist.xquery.functions.fn.LoadXQueryModule;
-import org.exist.xquery.value.FunctionParameterSequenceType;
-import org.exist.xquery.value.Sequence;
-import org.exist.xquery.value.SequenceType;
-import org.exist.xquery.value.StringValue;
-import org.exist.xquery.value.Type;
+import org.exist.xquery.value.*;
 
 public class PrologFunctions extends BasicFunction {
 	
 	protected static final Logger logger = LogManager.getLogger(PrologFunctions.class);
 
-	public final static FunctionSignature signatures[] = {
+	public final static FunctionSignature[] signatures = {
 		new FunctionSignature(
 			new QName("import-module", UtilModule.NAMESPACE_URI, UtilModule.PREFIX),
 			"Dynamically imports an XQuery module into the current context. The parameters have the same " +
@@ -46,7 +41,7 @@ public class PrologFunctions extends BasicFunction {
 			new SequenceType[] {
 				new FunctionParameterSequenceType("module-uri", Type.ANY_URI, Cardinality.EXACTLY_ONE, "The namespace URI of the module"),
 				new FunctionParameterSequenceType("prefix", Type.STRING, Cardinality.EXACTLY_ONE, "The prefix to be assigned to the namespace"),
-				new FunctionParameterSequenceType("location", Type.ANY_URI, Cardinality.EXACTLY_ONE, "The location of the module")
+				new FunctionParameterSequenceType("location", Type.ANY_URI, Cardinality.ZERO_OR_MORE, "The location of the module")
 			},
 			new SequenceType(Type.ITEM, Cardinality.EMPTY_SEQUENCE),
 			LoadXQueryModule.LOAD_XQUERY_MODULE_2),
@@ -112,17 +107,24 @@ public class PrologFunctions extends BasicFunction {
 		
 		final String uri = args[0].getStringValue();
 		final String prefix = args[1].getStringValue();
-		final String location = args[2].getStringValue();
-		final Module module = context.importModule(uri, prefix, location);
+		final Sequence seq = args[2];
+		final AnyURIValue[] locationHints = new AnyURIValue[seq.getItemCount()];
+		for (int i = 0; i < locationHints.length; i++) {
+			locationHints[i] = (AnyURIValue)seq.itemAt(i);
+		}
+
+		final Module[] modules = context.importModule(uri, prefix, locationHints);
 
 		context.getRootContext().resolveForwardReferences();
 
-		if (!module.isInternalModule()) {
-			// ensure variable declarations in the imported module are analyzed.
-			// unlike when using a normal import statement, this is not done automatically
-			((ExternalModule)module).analyzeGlobalVars();
+		for (final Module module : modules) {
+			if (!module.isInternalModule()) {
+				// ensure variable declarations in the imported module are analyzed.
+				// unlike when using a normal import statement, this is not done automatically
+				((ExternalModule)module).analyzeGlobalVars();
+			}
 		}
-		
+
 //		context.getRootContext().analyzeAndOptimizeIfModulesChanged((PathExpr) context.getRootExpression());
 	}
 	

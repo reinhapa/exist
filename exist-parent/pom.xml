@@ -1,4 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    eXist-db Open Source Native XML Database
+    Copyright (C) 2001 The eXist-db Authors
+
+    info@exist-db.org
+    http://www.exist-db.org
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
@@ -13,8 +36,8 @@
     <inceptionYear>2001</inceptionYear>
 
     <organization>
-        <name>The eXist-db Project</name>
-        <url>https://www.exist-db.org</url>
+        <name>The eXist-db Open Source project</name>
+        <url>http://www.exist-db.org</url>
     </organization>
 
     <licenses>
@@ -27,8 +50,8 @@
 
     <developers>
         <developer>
-            <name>The eXist-db Project</name>
-            <organization>The eXist-db Project</organization>
+            <name>The eXist-db Authors</name>
+            <organization>The eXist-db Open Source project</organization>
             <url>https://www.exist-db.org</url>
             <email>info@exist-db.org</email>
         </developer>
@@ -73,26 +96,34 @@
         <project.build.target>1.8</project.build.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
+        <project.copyright.name>The eXist-db Authors</project.copyright.name>
+
         <contact.email>info@exist-db.org</contact.email>
 
-        <ant.version>1.10.7</ant.version>
-        <apache.httpcomponents.version>4.5.12</apache.httpcomponents.version>
-        <apache.httpcomponents.core.version>4.4.13</apache.httpcomponents.core.version>
+        <ant.version>1.10.9</ant.version>
+        <apache.httpcomponents.version>4.5.13</apache.httpcomponents.version>
+        <apache.httpcomponents.core.version>4.4.14</apache.httpcomponents.core.version>
         <apache.xmlrpc.version>3.1.3</apache.xmlrpc.version>
         <aspectj.version>1.9.4</aspectj.version>
-        <exquery.distribution.version>0.1.35</exquery.distribution.version>
+        <exquery.distribution.version>0.2.0</exquery.distribution.version>
         <icu.version>59.1</icu.version>
         <izpack.version>5.1.3</izpack.version>
-        <jaxb.version>2.3.1</jaxb.version>
-        <jetty.version>9.4.28.v20200408</jetty.version>
-        <log4j.version>2.13.1</log4j.version>
+        <jaxb.api.version>3.0.0</jaxb.api.version>
+        <jaxb.impl.version>3.0.0</jaxb.impl.version>
+        <jetty.version>9.4.36.v20210114</jetty.version>
+        <log4j.version>2.14.0</log4j.version>
         <lucene.version>4.10.4</lucene.version>
         <milton.version>1.8.1.3</milton.version>
         <saxon.version>9.9.1-7</saxon.version>
-        <xmlunit.version>2.6.4</xmlunit.version>
+        <xmlunit.version>2.8.2</xmlunit.version>
 
         <!-- needed just for the license-maven-plugin in this module! -->
         <project.parent.relativePath>.</project.parent.relativePath>
+        
+        <!-- Sonar cloud-->
+        <sonar.projectKey>eXist-db_exist</sonar.projectKey>
+        <sonar.organization>exist-db</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
 
     <dependencyManagement>
@@ -110,21 +141,22 @@
             </dependency>
 
             <dependency>
-                <groupId>javax.xml.bind</groupId>
-                <artifactId>jaxb-api</artifactId>
-                <version>${jaxb.version}</version>
+                <groupId>jakarta.xml.bind</groupId>
+                <artifactId>jakarta.xml.bind-api</artifactId>
+                <version>${jaxb.api.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>org.glassfish.jaxb</groupId>
-                <artifactId>jaxb-runtime</artifactId>
-                <version>${jaxb.version}</version>
+                <groupId>com.sun.xml.bind</groupId>
+                <artifactId>jaxb-impl</artifactId>
+                <version>${jaxb.impl.version}</version>
+                <scope>runtime</scope>
             </dependency>
 
             <dependency>
                 <groupId>com.github.ben-manes.caffeine</groupId>
                 <artifactId>caffeine</artifactId>
-                <version>2.8.1</version>
+                <version>2.9.0</version>
             </dependency>
 
             <dependency>
@@ -136,7 +168,7 @@
             <dependency>
                 <groupId>org.jctools</groupId>
                 <artifactId>jctools-core</artifactId>
-                <version>3.0.0</version>
+                <version>3.2.0</version>
             </dependency>
 
             <dependency>
@@ -166,13 +198,13 @@
             <dependency>
                 <groupId>commons-codec</groupId>
                 <artifactId>commons-codec</artifactId>
-                <version>1.14</version>
+                <version>1.15</version>
             </dependency>
 
             <dependency>
                 <groupId>commons-io</groupId>
                 <artifactId>commons-io</artifactId>
-                <version>2.6</version>
+                <version>2.8.0</version>
             </dependency>
 
             <dependency>
@@ -321,7 +353,7 @@
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
-                <version>3.10</version>
+                <version>3.11</version>
             </dependency>
 
             <dependency>
@@ -339,7 +371,7 @@
             <dependency>
                 <groupId>org.expath.packaging</groupId>
                 <artifactId>pkg-java</artifactId>
-                <version>1.4.2</version>
+                <version>1.5.0</version>
             </dependency>
 
             <dependency>
@@ -349,9 +381,9 @@
             </dependency>
 
             <dependency>
-                <groupId>commons-collections</groupId>
-                <artifactId>commons-collections</artifactId>
-                <version>3.2.2</version>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-collections4</artifactId>
+                <version>4.4</version>
             </dependency>
 
             <dependency>
@@ -381,13 +413,13 @@
             <dependency>
                 <groupId>it.unimi.dsi</groupId>
                 <artifactId>fastutil</artifactId>
-                <version>8.3.1</version>
+                <version>8.5.2</version>
             </dependency>
 
             <dependency>
                 <groupId>io.lacuna</groupId>
                 <artifactId>bifurcan</artifactId>
-                <version>0.2.0-alpha1</version>
+                <version>0.2.0-alpha4</version>
             </dependency>
 
             <dependency>
@@ -405,6 +437,13 @@
                 <groupId>org.xmlunit</groupId>
                 <artifactId>xmlunit-matchers</artifactId>
                 <version>${xmlunit.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <!-- we ourselves have a test scoped dependency on a newer hamcrest... see below! -->
+                        <groupId>org.hamcrest</groupId>
+                        <artifactId>hamcrest-core</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.xmlunit</groupId>
@@ -415,8 +454,15 @@
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
-                <version>4.13</version>
+                <version>4.13.1</version>
                 <!-- scope>test</scope --> <!-- not just test scope, as needed for org.exist.test -->
+                <exclusions>
+                    <exclusion>
+                        <!-- we ourselves have a test scoped dependency on a newer hamcrest... see below! -->
+                        <groupId>org.hamcrest</groupId>
+                        <artifactId>hamcrest-core</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.hamcrest</groupId>
@@ -453,13 +499,12 @@
                 <plugin>
                     <groupId>com.mycila</groupId>
                     <artifactId>license-maven-plugin</artifactId>
-                    <version>3.0</version>
+                    <version>4.0.rc1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.owasp</groupId>
                     <artifactId>dependency-check-maven</artifactId>
-                    <!-- TODO(AR) version 5.0.0-M3 seems to be unreliable, see: https://github.com/jeremylong/DependencyCheck/issues/1918 -->
-                    <version>5.3.2</version>
+                    <version>6.1.1</version>
                     <configuration>
                         <archiveAnalyzerEnabled>false</archiveAnalyzerEnabled>
                         <assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
@@ -476,12 +521,15 @@
                         <rubygemsAnalyzerEnabled>false</rubygemsAnalyzerEnabled>
                         <retireJsAnalyzerEnabled>false</retireJsAnalyzerEnabled>
                         <swiftPackageManagerAnalyzerEnabled>false</swiftPackageManagerAnalyzerEnabled>
+
+                        <!-- clashes with Ant 1.10.7, see https://github.com/jeremylong/DependencyCheck/issues/1914 -->
+                        <skipSystemScope>true</skipSystemScope>
                     </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-resources-plugin</artifactId>
-                    <version>3.1.0</version>
+                    <version>3.2.0</version>
                 </plugin>
                 <plugin>
                     <groupId>com.code54.mojo</groupId>
@@ -595,28 +643,43 @@
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jarsigner-plugin</artifactId>
+                    <version>3.0.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>3.0.0-M4</version>
                     <configuration>
                         <forkCount>2C</forkCount>
-
                         <!--  Setting `reuseForks` to `true` greatly speeds up execution of the the test suite.
                               However it can make it hard to diagnose problems if tests leak state; If you experience
                               such a problem you may want to set it to `false` whilst debugging -->
                         <reuseForks>true</reuseForks>
-
-                        <argLine>-Dfile.encoding=${project.build.sourceEncoding} -Dlog4j.configurationFile=${project.build.testOutputDirectory}/log4j2.xml</argLine>
+                        <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
+                        <systemPropertyVariables>
+                            <user.country>UK</user.country>
+                            <user.language>en</user.language>
+                            <user.timezone>Europe/Berlin</user.timezone>
+                            <java.locale.providers>JRE,CLDR,SPI</java.locale.providers>
+                            <log4j.configurationFile>${project.build.testOutputDirectory}/log4j2.xml</log4j.configurationFile>
+                        </systemPropertyVariables>
                     </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-report-plugin</artifactId>
-                    <version>3.0.0-M4</version>
+                    <version>3.0.0-M5</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>3.0.0-M5</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-project-info-reports-plugin</artifactId>
-                    <version>3.0.0</version>
+                    <version>3.1.1</version>
                     <configuration>
                         <dependencyDetailsEnabled>false</dependencyDetailsEnabled>  <!-- TODO(AR) disabled due to slow `mvn site` build times -->
                     </configuration>
@@ -624,12 +687,12 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>versions-maven-plugin</artifactId>
-                    <version>2.7</version>
+                    <version>2.8.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-site-plugin</artifactId>
-                    <version>3.9.0</version>
+                    <version>3.9.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -639,7 +702,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-assembly-plugin</artifactId>
-                    <version>3.2.0</version>
+                    <version>3.3.0</version>
                     <configuration>
                         <archive>
                             <manifest>
@@ -662,12 +725,12 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-shade-plugin</artifactId>
-                    <version>3.2.3</version>
+                    <version>3.2.4</version>
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>exec-maven-plugin</artifactId>
-                    <version>1.6.0</version>
+                    <version>3.0.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -712,20 +775,43 @@
                 <artifactId>license-maven-plugin</artifactId>
                 <inherited>true</inherited>
                 <configuration>
-                    <header>${project.parent.relativePath}/LGPL-21-license.template.txt</header>
-                    <failIfMissing>false</failIfMissing> <!-- TODO(AR) should be true eventually -->
-                    <aggregate>true</aggregate>
+                    <licenseSets>
+                        <licenseSet>
+                            <header>${project.parent.relativePath}/LGPL-21-license.template.txt</header>
+                            <excludes>
+                                <exclude>FDB-backport-LGPL-21-ONLY-license.template.txt</exclude>
+                            </excludes>
+                        </licenseSet>
+                    </licenseSets>
+                    <headerDefinitions>
+                        <headerDefinition>${project.parent.relativePath}/xquery-license-style.xml</headerDefinition>
+                    </headerDefinitions>
+                    <mapping>
+                        <form>XML_STYLE</form>
+                        <g>SLASHSTAR_STYLE</g>
+                        <java>SLASHSTAR_STYLE</java>
+                        <xconf>XML_STYLE</xconf>
+                        <xconf.init>XML_STYLE</xconf.init>
+                        <xq>XQUERY_STYLE</xq>
+                        <xql>XQUERY_STYLE</xql>
+                        <xqm>XQUERY_STYLE</xqm>
+                        <xsl>XML_STYLE</xsl>
+                        <xslt>XML_STYLE</xslt>
+                    </mapping>
+                    <failIfMissing>true</failIfMissing>
                     <strictCheck>true</strictCheck>
                     <properties>
-                        <organisation>${project.organization.name}</organisation>
+                        <copyright.year>${project.inceptionYear}</copyright.year>
+                        <copyright.name>${project.copyright.name}</copyright.name>
                         <email>${contact.email}</email>
                         <url>${project.organization.url}</url>
                     </properties>
                     <excludes>
-                        <exclude>**/pom.xml</exclude>
+                        <exclude>LGPL-21-license.template.txt</exclude>
                         <exclude>**/README.md</exclude>
+                        <exclude>**/README</exclude>
                         <exclude>**/LICENSE</exclude>
-                        <exclude>**/project-suppression.xml</exclude>
+                        <exclude>**/*.xar</exclude>
                     </excludes>
                     <encoding>${project.build.sourceEncoding}</encoding>
                 </configuration>
@@ -852,6 +938,17 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
+        <repository>
+            <id>sonatype-snapshots</id>
+            <name>Nexus Snapshot Repository - XMLDB:API Snapshots</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
     </repositories>
 
     <pluginRepositories>
@@ -925,6 +1022,7 @@
         </profile>
 
         <profile>
+            <!-- NOTE: this is used from the maven-release-plugin -->
             <id>exist-release</id>
             <build>
                 <plugins>
@@ -938,6 +1036,13 @@
                                 <goals>
                                     <goal>sign</goal>
                                 </goals>
+                                <configuration>
+                                    <keyname>${existdb.release.key}</keyname>
+                                    <defaultKeyring>false</defaultKeyring>
+                                    <publicKeyring>${existdb.release.public-keyfile}</publicKeyring>
+                                    <secretKeyring>${existdb.release.private-keyfile}</secretKeyring>
+                                    <passphrase>${existdb.release.key.passphrase}</passphrase>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>

@@ -1,21 +1,23 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2001-2019 The eXist Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.backup.restore;
 
@@ -33,6 +35,7 @@ import org.exist.dom.persistent.LockedDocument;
 import org.exist.security.ACLPermission;
 import org.exist.security.PermissionDeniedException;
 import org.exist.security.SecurityManager;
+import org.exist.security.internal.RealmImpl;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.lock.LockManager;
@@ -212,7 +215,7 @@ public class RestoreHandler extends DefaultHandler {
                 Collection collection = broker.getCollection(collUri);
                 if (collection == null) {
                     collection = broker.getOrCreateCollection(transaction, collUri);
-                    collection.setCreationTime(getDateFromXSDateTimeStringForItem(created, name).getTime());
+                    collection.setCreated(getDateFromXSDateTimeStringForItem(created, name).getTime());
                     broker.saveCollection(transaction, collection);
                 }
 
@@ -331,16 +334,16 @@ public class RestoreHandler extends DefaultHandler {
                             final IndexInfo info = collection.validateXMLResource(transaction, broker, docName, is);
                             validated = true;
 
-                            info.getDocument().getMetadata().setMimeType(mimeType);
+                            info.getDocument().setMimeType(mimeType);
                             if (dateCreated != null) {
-                                info.getDocument().getMetadata().setCreated(dateCreated.getTime());
+                                info.getDocument().setCreated(dateCreated.getTime());
                             }
                             if (dateModified != null) {
-                                info.getDocument().getMetadata().setLastModified(dateModified.getTime());
+                                info.getDocument().setLastModified(dateModified.getTime());
                             }
                             if (publicId != null || systemId != null) {
                                 final DocumentType docType = new DocumentTypeImpl(nameDocType, publicId, systemId);
-                                info.getDocument().getMetadata().setDocType(docType);
+                                info.getDocument().setDocType(docType);
                             }
                             collection.store(transaction, broker, info, is);
 
@@ -400,9 +403,10 @@ public class RestoreHandler extends DefaultHandler {
             name = atts.getValue("name");
         }
 
-        // exclude /db/system collection and sub-collections, as these have already been restored
+        // exclude the /db/system, /db/system/security, /db/system/security/exist/groups collections and their sub-collections, as these have already been restored
         if ((XmldbURI.DB.equals(currentCollectionUri) && "system".equals(name))
-                || (XmldbURI.SYSTEM.equals(currentCollectionUri) && "security".equals(name))) {
+                || (XmldbURI.SYSTEM.equals(currentCollectionUri) && "security".equals(name))
+                || (XmldbURI.SYSTEM.append("security").append(RealmImpl.ID).equals(currentCollectionUri) && "groups".equals(name))) {
             return;
         }
 

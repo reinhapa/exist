@@ -1,22 +1,23 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2001-2014 The eXist-db Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *  
- * This program is distributed in the hope that it will be useful,
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.client;
 
@@ -651,7 +652,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
                         shell.setCaretPosition(doc.getLength());
                     }
                 }
-                if (e.paramString().indexOf(Messages.getString("ClientFrame.93")) > Constants.STRING_NOT_FOUND) { //$NON-NLS-1$
+                if (e.paramString().contains(Messages.getString("ClientFrame.93"))) { //$NON-NLS-1$
                     if (shell.getCaretPosition() <= commandStart) {
                         e.consume();
                     }
@@ -1052,24 +1053,20 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
             final String backuptarget = dialog.getBackupTarget();
             final boolean deduplicateBlobs = dialog.getDeduplicateBlobs();
 
-            // DWES add check here?
             final Path target = Paths.get(backuptarget).normalize();
             if (Files.exists(target)) {
                 final int response = JOptionPane.showConfirmDialog(this,
                         String.format("%s %s %s", Messages.getString("CreateBackupDialog.6a"), backuptarget, Messages.getString("CreateBackupDialog.6b")),
                         Messages.getString("CreateBackupDialog.6c"), JOptionPane.YES_NO_OPTION);
 
-                if (response == JOptionPane.CLOSED_OPTION) {
-                    // User clicked close window
-                    return;
-
-                } else if (response == JOptionPane.YES_OPTION) {
-                    // User wants directory to be removed
+                if (response == JOptionPane.YES_OPTION) {
+                    // User wants file/directory to be removed
                     deleteDirectory(target);
+                } else {
+                    JOptionPane.showMessageDialog(null, "Backup aborted, backup has not been deleted.");
+                    return;
                 }
-
             }
-
 
             try {
                 final Backup backup = new Backup(
@@ -1221,7 +1218,7 @@ public class ClientFrame extends JFrame implements WindowFocusListener, KeyListe
                     resource = collection
                             .getResource(desc.getName().toString());
                     if (resource instanceof ExtendedResource) {
-                        try(final OutputStream os = Files.newOutputStream(file)) {
+                        try(final OutputStream os = new BufferedOutputStream(Files.newOutputStream(file))) {
                             ((ExtendedResource) resource).getContentIntoAStream(os);
                         }
                     } else {

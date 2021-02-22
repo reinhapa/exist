@@ -1,21 +1,23 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2001-2017 The eXist Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 package org.exist.storage;
@@ -25,9 +27,7 @@ import com.evolvedbinary.j8fu.tuple.Tuple3;
 import org.easymock.IMocksControl;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
-import org.exist.collections.CollectionMetadata;
 import org.exist.dom.persistent.DocumentImpl;
-import org.exist.dom.persistent.DocumentMetadata;
 import org.exist.dom.persistent.LockedDocument;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.lock.Lock;
@@ -60,31 +60,27 @@ public class FluentBrokerAPITest {
         final BrokerPool mockBrokerPool = ctrl.createMock(BrokerPool.class);
         final DBBroker mockBroker = ctrl.createMock(DBBroker.class);
         final Collection mockCollection = ctrl.createMock(Collection.class);
-        final CollectionMetadata mockCollectionMetadata = ctrl.createMock(CollectionMetadata.class);
         final LockedDocument mockLockedDocument = ctrl.createMock(LockedDocument.class);
         final DocumentImpl mockDocument = ctrl.createMock(DocumentImpl.class);
-        final DocumentMetadata mockDocumentMetadata = ctrl.createMock(DocumentMetadata.class);
 
         expect(mockBrokerPool.getBroker()).andReturn(mockBroker);
         expect(mockBroker.openCollection(TEST_COLLECTION_URI, READ_LOCK)).andReturn(mockCollection);
-        expect(mockCollection.getMetadata()).andReturn(mockCollectionMetadata);
-        expect(mockCollectionMetadata.getCreated()).andReturn(collectionCreated);
+        expect(mockCollection.getCreated()).andReturn(collectionCreated);
         expect(mockCollection.getDocumentWithLock(mockBroker, docUri, READ_LOCK)).andReturn(mockLockedDocument);
         expect(mockLockedDocument.getDocument()).andReturn(mockDocument);
         expect(mockCollection.getURI()).andReturn(TEST_COLLECTION_URI);
         expect(mockDocument.getFileURI()).andReturn(docUri);
         mockCollection.close();      // NOTE: checks that Collection lock is release before Document lock
-        expect(mockDocument.getMetadata()).andReturn(mockDocumentMetadata);
-        expect(mockDocumentMetadata.getLastModified()).andReturn(docLastModified);
+        expect(mockDocument.getLastModified()).andReturn(docLastModified);
         mockLockedDocument.close();
         mockBroker.close();
 
 
         ctrl.replay();
 
-        final Function<Collection, Long> collectionOp = collection -> collection.getMetadata().getCreated();
+        final Function<Collection, Long> collectionOp = collection -> collection.getCreated();
         final BiFunction<Collection, DocumentImpl, String> collectionDocOp = (collection, doc) -> collection.getURI().append(doc.getFileURI()).toString();
-        final Function<DocumentImpl, Long> documentOp = document -> document.getMetadata().getLastModified();
+        final Function<DocumentImpl, Long> documentOp = document -> document.getLastModified();
 
         final Tuple3<Long, String, Long> result = FluentBrokerAPI.builder(mockBrokerPool)
                 .withCollection(TEST_COLLECTION_URI, READ_LOCK)
@@ -112,19 +108,17 @@ public class FluentBrokerAPITest {
         final BrokerPool mockBrokerPool = ctrl.createMock(BrokerPool.class);
         final DBBroker mockBroker = ctrl.createMock(DBBroker.class);
         final Collection mockCollection = ctrl.createMock(Collection.class);
-        final CollectionMetadata mockCollectionMetadata = ctrl.createMock(CollectionMetadata.class);
 
         expect(mockBrokerPool.getBroker()).andReturn(mockBroker);
         expect(mockBroker.openCollection(TEST_COLLECTION_URI, READ_LOCK)).andReturn(mockCollection);
-        expect(mockCollection.getMetadata()).andReturn(mockCollectionMetadata);
-        expect(mockCollectionMetadata.getCreated()).andReturn(collectionCreated);
+        expect(mockCollection.getCreated()).andReturn(collectionCreated);
         mockCollection.close();
         mockBroker.close();
 
 
         ctrl.replay();
 
-        final Function<Collection, Long> collectionOp = collection -> collection.getMetadata().getCreated();
+        final Function<Collection, Long> collectionOp = collection -> collection.getCreated();
 
         final long result = FluentBrokerAPI.builder(mockBrokerPool)
                 .withCollection(TEST_COLLECTION_URI, READ_LOCK)
@@ -189,22 +183,20 @@ public class FluentBrokerAPITest {
         final Collection mockCollection = ctrl.createMock(Collection.class);
         final LockedDocument mockLockedDocument = ctrl.createMock(LockedDocument.class);
         final DocumentImpl mockDocument = ctrl.createMock(DocumentImpl.class);
-        final DocumentMetadata mockDocumentMetadata = ctrl.createMock(DocumentMetadata.class);
 
         expect(mockBrokerPool.getBroker()).andReturn(mockBroker);
         expect(mockBroker.openCollection(TEST_COLLECTION_URI, READ_LOCK)).andReturn(mockCollection);
         expect(mockCollection.getDocumentWithLock(mockBroker, docUri, READ_LOCK)).andReturn(mockLockedDocument);
         expect(mockLockedDocument.getDocument()).andReturn(mockDocument);
         mockCollection.close();      // NOTE: checks that Collection lock is release before Document lock
-        expect(mockDocument.getMetadata()).andReturn(mockDocumentMetadata);
-        expect(mockDocumentMetadata.getLastModified()).andReturn(docLastModified);
+        expect(mockDocument.getLastModified()).andReturn(docLastModified);
         mockLockedDocument.close();
         mockBroker.close();
 
 
         ctrl.replay();
 
-        final Function<DocumentImpl, Long> documentOp = document -> document.getMetadata().getLastModified();
+        final Function<DocumentImpl, Long> documentOp = document -> document.getLastModified();
 
         final long result = FluentBrokerAPI.builder(mockBrokerPool)
                 .withCollection(TEST_COLLECTION_URI, READ_LOCK)
@@ -229,14 +221,12 @@ public class FluentBrokerAPITest {
         final BrokerPool mockBrokerPool = ctrl.createMock(BrokerPool.class);
         final DBBroker mockBroker = ctrl.createMock(DBBroker.class);
         final Collection mockCollection = ctrl.createMock(Collection.class);
-        final CollectionMetadata mockCollectionMetadata = ctrl.createMock(CollectionMetadata.class);
         final LockedDocument mockLockedDocument = ctrl.createMock(LockedDocument.class);
         final DocumentImpl mockDocument = ctrl.createMock(DocumentImpl.class);
 
         expect(mockBrokerPool.getBroker()).andReturn(mockBroker);
         expect(mockBroker.openCollection(TEST_COLLECTION_URI, READ_LOCK)).andReturn(mockCollection);
-        expect(mockCollection.getMetadata()).andReturn(mockCollectionMetadata);
-        expect(mockCollectionMetadata.getCreated()).andReturn(collectionCreated);
+        expect(mockCollection.getCreated()).andReturn(collectionCreated);
         expect(mockCollection.getDocumentWithLock(mockBroker, docUri, READ_LOCK)).andReturn(mockLockedDocument);
         expect(mockLockedDocument.getDocument()).andReturn(mockDocument);
         expect(mockCollection.getURI()).andReturn(TEST_COLLECTION_URI);
@@ -248,7 +238,7 @@ public class FluentBrokerAPITest {
 
         ctrl.replay();
 
-        final Function<Collection, Long> collectionOp = collection -> collection.getMetadata().getCreated();
+        final Function<Collection, Long> collectionOp = collection -> collection.getCreated();
         final BiFunction<Collection, DocumentImpl, String> collectionDocOp = (collection, doc) -> collection.getURI().append(doc.getFileURI()).toString();
 
         final Tuple2<Long, String> result = FluentBrokerAPI.builder(mockBrokerPool)
@@ -276,28 +266,24 @@ public class FluentBrokerAPITest {
         final BrokerPool mockBrokerPool = ctrl.createMock(BrokerPool.class);
         final DBBroker mockBroker = ctrl.createMock(DBBroker.class);
         final Collection mockCollection = ctrl.createMock(Collection.class);
-        final CollectionMetadata mockCollectionMetadata = ctrl.createMock(CollectionMetadata.class);
         final LockedDocument mockLockedDocument = ctrl.createMock(LockedDocument.class);
         final DocumentImpl mockDocument = ctrl.createMock(DocumentImpl.class);
-        final DocumentMetadata mockDocumentMetadata = ctrl.createMock(DocumentMetadata.class);
 
         expect(mockBrokerPool.getBroker()).andReturn(mockBroker);
         expect(mockBroker.openCollection(TEST_COLLECTION_URI, READ_LOCK)).andReturn(mockCollection);
-        expect(mockCollection.getMetadata()).andReturn(mockCollectionMetadata);
-        expect(mockCollectionMetadata.getCreated()).andReturn(collectionCreated);
+        expect(mockCollection.getCreated()).andReturn(collectionCreated);
         expect(mockCollection.getDocumentWithLock(mockBroker, docUri, READ_LOCK)).andReturn(mockLockedDocument);
         expect(mockLockedDocument.getDocument()).andReturn(mockDocument);
         mockCollection.close();      // NOTE: checks that Collection lock is release before Document lock
-        expect(mockDocument.getMetadata()).andReturn(mockDocumentMetadata);
-        expect(mockDocumentMetadata.getLastModified()).andReturn(docLastModified);
+        expect(mockDocument.getLastModified()).andReturn(docLastModified);
         mockLockedDocument.close();
         mockBroker.close();
 
 
         ctrl.replay();
 
-        final Function<Collection, Long> collectionOp = collection -> collection.getMetadata().getCreated();
-        final Function<DocumentImpl, Long> documentOp = document -> document.getMetadata().getLastModified();
+        final Function<Collection, Long> collectionOp = collection -> collection.getCreated();
+        final Function<DocumentImpl, Long> documentOp = document -> document.getLastModified();
 
         final Tuple2<Long, Long> result = FluentBrokerAPI.builder(mockBrokerPool)
                 .withCollection(TEST_COLLECTION_URI, READ_LOCK)
@@ -326,7 +312,6 @@ public class FluentBrokerAPITest {
         final Collection mockCollection = ctrl.createMock(Collection.class);
         final LockedDocument mockLockedDocument = ctrl.createMock(LockedDocument.class);
         final DocumentImpl mockDocument = ctrl.createMock(DocumentImpl.class);
-        final DocumentMetadata mockDocumentMetadata = ctrl.createMock(DocumentMetadata.class);
 
         expect(mockBrokerPool.getBroker()).andReturn(mockBroker);
         expect(mockBroker.openCollection(TEST_COLLECTION_URI, READ_LOCK)).andReturn(mockCollection);
@@ -335,8 +320,7 @@ public class FluentBrokerAPITest {
         expect(mockCollection.getURI()).andReturn(TEST_COLLECTION_URI);
         expect(mockDocument.getFileURI()).andReturn(docUri);
         mockCollection.close();      // NOTE: checks that Collection lock is release before Document lock
-        expect(mockDocument.getMetadata()).andReturn(mockDocumentMetadata);
-        expect(mockDocumentMetadata.getLastModified()).andReturn(docLastModified);
+        expect(mockDocument.getLastModified()).andReturn(docLastModified);
         mockLockedDocument.close();
         mockBroker.close();
 
@@ -344,7 +328,7 @@ public class FluentBrokerAPITest {
         ctrl.replay();
 
         final BiFunction<Collection, DocumentImpl, String> collectionDocOp = (collection, doc) -> collection.getURI().append(doc.getFileURI()).toString();
-        final Function<DocumentImpl, Long> documentOp = document -> document.getMetadata().getLastModified();
+        final Function<DocumentImpl, Long> documentOp = document -> document.getLastModified();
 
         final Tuple2<String, Long> result = FluentBrokerAPI.builder(mockBrokerPool)
                 .withCollection(TEST_COLLECTION_URI, READ_LOCK)

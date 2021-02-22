@@ -1,21 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2015 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 header {
 	package org.exist.xquery.parser;
@@ -31,8 +33,10 @@ header {
 	import java.util.Set;
 	import java.util.TreeSet;
 	import java.util.HashMap;
+	import java.util.HashSet;
 	import java.util.Stack;
 	import javax.xml.XMLConstants;
+	import org.apache.xerces.util.XMLChar;
 	import org.exist.storage.BrokerPool;
 	import org.exist.storage.DBBroker;
 	import org.exist.EXistException;
@@ -42,7 +46,6 @@ header {
 	import org.exist.dom.QName;
 	import org.exist.dom.QName.IllegalQNameException;
 	import org.exist.security.PermissionDeniedException;
-	import org.exist.util.XMLChar;
 	import org.exist.xquery.*;
 	import org.exist.xquery.Constants.ArithmeticOperator;
 	import org.exist.xquery.Constants.Comparison;
@@ -53,6 +56,8 @@ header {
 	import org.exist.storage.ElementValue;
 	import org.exist.xquery.functions.map.MapExpr;
 	import org.exist.xquery.functions.array.ArrayConstructor;
+
+	import static org.apache.commons.lang3.ArrayUtils.isNotEmpty;
 }
 
 /**
@@ -76,6 +81,9 @@ options {
 	protected boolean foundError = false;
 	protected Map<String, String> declaredNamespaces = new HashMap<>();
 	protected Set<QName> declaredGlobalVars = new TreeSet<>();
+	protected Set<String> importedModules = new HashSet<>();
+	protected Set<String> importedModuleFunctions = null;
+	protected Set<QName> importedModuleVariables = null;
 
 	public XQueryTreeParser(XQueryContext context) {
         this(context, null);
@@ -477,11 +485,13 @@ throws PermissionDeniedException, EXistException, XPathException
 				} catch (final IllegalQNameException iqe) {
 				    throw new XPathException(qname.getLine(), qname.getColumn(), ErrorCodes.XPST0081, "No namespace defined for prefix " + qname.getText());
 				}
-				if (declaredGlobalVars.contains(qn))
+				if (declaredGlobalVars.contains(qn)
+				        || (importedModuleVariables != null && importedModuleVariables.contains(qn))) {
 					throw new XPathException(qname, ErrorCodes.XQST0049, "It is a " +
 						"static error if more than one variable declared or " +
 						"imported by a module has the same expanded QName. " +
 						"Variable: " + qn.toString());
+                }
 				declaredGlobalVars.add(qn);
 			}
                         { List annots = new ArrayList(); }
@@ -612,39 +622,76 @@ throws PermissionDeniedException, EXistException, XPathException
 		i:MODULE_IMPORT
 		{
 			String modulePrefix = null;
-			String location = null;
-            List uriList= new ArrayList(2);
+            final List<AnyURIValue> uriList = new ArrayList<>(1);
 		}
 		( pfx:NCNAME { modulePrefix = pfx.getText(); } )?
 		moduleURI:STRING_LITERAL
 		( uriList [uriList] )?
 		{
 			if (modulePrefix != null) {
-				if (declaredNamespaces.get(modulePrefix) != null)
+				if (declaredNamespaces.get(modulePrefix) != null) {
 					throw new XPathException(i, ErrorCodes.XQST0033, "Prolog contains " +
 						"multiple declarations for namespace prefix: " + modulePrefix);
+                }
 				declaredNamespaces.put(modulePrefix, moduleURI.getText());
 			}
+
+            final String moduleNamespaceUri = moduleURI.getText();
+            if (importedModules.contains(moduleNamespaceUri)) {
+                throw new XPathException(i, ErrorCodes.XQST0047, "Prolog has " +
+                    "more than one 'import module' statement for module(s) of namespace: " + moduleNamespaceUri);
+            }
+            importedModules.add(moduleNamespaceUri);
+
+            final org.exist.xquery.Module[] modules;
             try {
-                if (uriList.size() > 0) {
-			    for (Iterator j= uriList.iterator(); j.hasNext();) {
-                   try {
-                        location= ((AnyURIValue) j.next()).getStringValue();
-                       context.importModule(moduleURI.getText(), modulePrefix, location);
-                        staticContext.declareNamespace(modulePrefix, moduleURI.getText());
-                    } catch(XPathException xpe) {
-                        if (!j.hasNext()) {
-                            throw xpe;
+                modules = context.importModule(moduleNamespaceUri, modulePrefix, uriList.toArray(new AnyURIValue[uriList.size()]));
+                staticContext.declareNamespace(modulePrefix, moduleNamespaceUri);
+            } catch (final XPathException xpe) {
+                xpe.prependMessage("error found while loading module " + modulePrefix + ": ");
+                throw xpe;
+            }
+
+            if (isNotEmpty(modules)) {
+                for (final org.exist.xquery.Module module : modules) {
+
+                    // check modules does not import any duplicate function definitions
+                    final FunctionSignature[] signatures = module.listFunctions();
+                    if (isNotEmpty(signatures)) {
+                        for (final FunctionSignature signature : signatures) {
+                            final String qualifiedNameArity = signature.getName().toURIQualifiedName() + '#' + signature.getArgumentCount();
+                            if (importedModuleFunctions != null) {
+                                if (importedModuleFunctions.contains(qualifiedNameArity)) {
+                                    throw new XPathException(i, ErrorCodes.XQST0034, "Prolog has " +
+                                        "more than one imported module that defines the function: " + qualifiedNameArity);
+                                }
+                            } else {
+                                importedModuleFunctions = new HashSet<>();
+                            }
+
+                            importedModuleFunctions.add(qualifiedNameArity);
+                        }
+                    }
+
+                    // check modules does not import any duplicate variable definitions
+                    final Iterator<QName> globalVariables = module.getGlobalVariables();
+                    if (globalVariables != null) {
+                        while (globalVariables.hasNext()) {
+                            final QName globalVarName = globalVariables.next();
+
+                            if (importedModuleVariables != null) {
+                                if (importedModuleVariables.contains(globalVarName)) {
+                                        throw new XPathException(i, ErrorCodes.XQST0049, "Prolog has " +
+                                                "more than one imported module that defines the variable: " + globalVarName.toURIQualifiedName());
+                                }
+                            } else {
+                                importedModuleVariables = new HashSet<>();
+                            }
+
+                            importedModuleVariables.add(globalVarName);
                         }
                     }
                 }
-                } else {
-                    context.importModule(moduleURI.getText(), modulePrefix, location);
-                    staticContext.declareNamespace(modulePrefix, moduleURI.getText());
-                }
-            } catch(XPathException xpe) {
-                xpe.prependMessage("error found while loading module " + modulePrefix + ": ");
-                throw xpe;
             }
 		}
 	)
@@ -773,6 +820,12 @@ throws PermissionDeniedException, EXistException, XPathException
 		( paramList [varList] )?
 		{
 			processParams(varList, func, signature);
+
+            final String qualifiedNameArity = signature.getName().toURIQualifiedName() + '#' + signature.getArgumentCount();
+            if (importedModuleFunctions != null && importedModuleFunctions.contains(qualifiedNameArity)) {
+                throw new XPathException(name.getLine(), name.getColumn(), ErrorCodes.XQST0034, "Prolog has " +
+                        "imports a module that defines a function which is already defined in the importing module: " + qualifiedNameArity);
+            }
 		}
 		(
 			#(
@@ -968,9 +1021,11 @@ throws XPathException
 			    try {
                     QName qn= QName.parse(staticContext, t.getText());
                     int code= Type.getType(qn);
-                    if(!Type.subTypeOf(code, Type.ATOMIC))
-                        throw new XPathException(t, "Type " + qn.toString() + " is not an atomic type");
+                    if (!Type.subTypeOf(code, Type.ATOMIC))
+                        throw new XPathException(t.getLine(), t.getColumn(), ErrorCodes.XPST0051, qn.toString() + " is not atomic");
                     type.setPrimaryType(code);
+                } catch (final XPathException e) {
+                    throw new XPathException(t.getLine(), t.getColumn(), ErrorCodes.XPST0051, "Unknown simple type " + t.getText());
                 } catch (final IllegalQNameException e) {
                     throw new XPathException(t.getLine(), t.getColumn(), ErrorCodes.XPST0081, "No namespace defined for prefix " + t.getText());
                 }
@@ -2019,22 +2074,27 @@ throws PermissionDeniedException, EXistException, XPathException
 primaryExpr [PathExpr path]
 returns [Expression step]
 throws PermissionDeniedException, EXistException, XPathException
-{
-	step = null;
-}:
+{ step = null; }
+:
 	step=constructor [path]
 	step=postfixExpr [step]
-	{
-		path.add(step);
-	}
+	{ path.add(step); }
 	|
 	step=mapConstr [path]
-  step=postfixExpr [step]
-  { path.add(step); }
+    step=postfixExpr [step]
+    { path.add(step); }
 	|
 	step=arrayConstr [path]
 	step=postfixExpr [step]
 	{ path.add(step); }
+	|
+    s:SELF
+	{
+	    step= new ContextItemExpression(context);
+        step.setASTNode(s);
+    }
+    step=postfixExpr [step]
+    { path.add(step); }
 	|
 	#(
 		PARENTHESIZED
@@ -2505,7 +2565,7 @@ throws PermissionDeniedException, EXistException, XPathException
 	|
 	SELF
 	{
-		step= new LocationStep(context, Constants.SELF_AXIS, new TypeTest(Type.NODE));
+		step = new ContextItemExpression(context);
 		path.add(step);
 	}
 	( predicate [(LocationStep) step] )*
@@ -3097,8 +3157,11 @@ throws PermissionDeniedException, EXistException, XPathException
 		qnameExpr=expr [qnamePathExpr]
 		(
 			{ elementContent = new PathExpr(context); }
-			contentExpr=expr[elementContent]
-			{ construct.addPath(elementContent); }
+			contentExpr=ec:expr[elementContent]
+			{
+			  elementContent.setASTNode(ec);
+			  construct.addPathIfNotFunction(elementContent);
+			}
 		)*
 	)
 	|
@@ -3376,6 +3439,8 @@ throws PermissionDeniedException, EXistException, XPathException
                 castExpr.setASTNode(castAST);
                 path.add(castExpr);
                 step = castExpr;
+            } catch (final XPathException e) {
+                throw new XPathException(t.getLine(), t.getColumn(), ErrorCodes.XPST0051, "Unknown simple type " + t.getText());
             } catch (final IllegalQNameException e) {
                 throw new XPathException(t.getLine(), t.getColumn(), ErrorCodes.XPST0081, "No namespace defined for prefix " + t.getText());
             }
@@ -3402,6 +3467,8 @@ throws PermissionDeniedException, EXistException, XPathException
                 castExpr.setASTNode(castAST);
                 path.add(castExpr);
                 step = castExpr;
+            } catch (final XPathException e) {
+                throw new XPathException(t2.getLine(), t2.getColumn(), ErrorCodes.XPST0051, "Unknown simple type " + t2.getText());
             } catch (final IllegalQNameException e) {
                 throw new XPathException(t2.getLine(), t2.getColumn(), ErrorCodes.XPST0081, "No namespace defined for prefix " + t2.getText());
             }

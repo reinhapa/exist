@@ -1,49 +1,38 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2001-2015 The eXist Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xmldb;
-
-import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Properties;
-
-import javax.annotation.Nullable;
 
 import org.apache.commons.io.output.CountingOutputStream;
 import org.apache.commons.io.output.NullOutputStream;
 import org.exist.dom.persistent.BinaryDocument;
 import org.exist.security.Subject;
 import org.exist.storage.BrokerPool;
-import org.exist.storage.DBBroker;
 import org.exist.storage.blob.BlobId;
-import org.exist.storage.txn.Txn;
 import org.exist.util.EXistInputSource;
 import org.exist.util.FileUtils;
 import org.exist.util.crypto.digest.DigestType;
 import org.exist.util.crypto.digest.MessageDigest;
-import org.exist.util.io.FastByteArrayInputStream;
-import org.exist.util.io.FastByteArrayOutputStream;
+import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
+import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.exist.xquery.value.BinaryValue;
 import org.w3c.dom.DocumentType;
 import org.xml.sax.InputSource;
@@ -52,6 +41,13 @@ import org.xmldb.api.base.ErrorCodes;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.BinaryResource;
 
+import javax.annotation.Nullable;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Properties;
+import org.exist.storage.DBBroker;
+import org.exist.storage.txn.Txn;
 import com.evolvedbinary.j8fu.function.SupplierE;
 
 public class LocalBinaryResource extends AbstractEXistResource implements ExtendedResource, EXistBinaryResource, EXistResource {
@@ -140,7 +136,7 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
             } else if(res instanceof byte[]) {
                 return res;
             } else if(res instanceof BinaryValue) {
-                try(final FastByteArrayOutputStream baos = new FastByteArrayOutputStream()) {
+                try(final UnsynchronizedByteArrayOutputStream baos = new UnsynchronizedByteArrayOutputStream()) {
                     ((BinaryValue) res).streamBinaryTo(baos);
                     return baos.toByteArray();
                 } catch (final IOException e) {
@@ -196,7 +192,7 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
         final InputStream is;
         if(file != null) {
             try {
-                is = Files.newInputStream(file);
+                is = new BufferedInputStream(Files.newInputStream(file));
             } catch(final IOException e) {
                 // Cannot fire it :-(
                 throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
@@ -204,7 +200,7 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
         } else if(inputSource != null) {
             is = inputSource.getByteStream();
         } else if(rawData != null) {
-            is = new FastByteArrayInputStream(rawData);
+            is = new UnsynchronizedByteArrayInputStream(rawData);
         } else if(binaryValue != null) {
             is = binaryValue.getInputStream();
         } else {
@@ -216,7 +212,7 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
 
     @Override
     public void getContentIntoAFile(final Path tmpFile) throws XMLDBException {
-        try(final OutputStream bos = Files.newOutputStream(tmpFile)) {
+        try(final OutputStream bos = new BufferedOutputStream(Files.newOutputStream(tmpFile))) {
             getContentIntoAStream(bos);
         } catch(final IOException ioe) {
             throw new XMLDBException(ErrorCodes.VENDOR_ERROR, "error while loading binary resource " + getId(), ioe);
@@ -283,7 +279,7 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
     }
 
     private byte[] readFile(final InputStream is) throws XMLDBException {
-        try(final FastByteArrayOutputStream bos = new FastByteArrayOutputStream()) {
+        try(final UnsynchronizedByteArrayOutputStream bos = new UnsynchronizedByteArrayOutputStream()) {
             bos.write(is);
             return bos.toByteArray();
         } catch (final IOException e) {

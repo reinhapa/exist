@@ -1,37 +1,39 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2001-2007 The eXist Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *  
- * This program is distributed in the hope that it will be useful,
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *  
- *  $Id$
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery.value;
 
 import com.ibm.icu.text.Collator;
-import org.exist.util.FastStringBuffer;
 import org.exist.xquery.Constants;
 import org.exist.xquery.Constants.Comparison;
 import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.XPathException;
 
+import javax.annotation.Nullable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
+import java.util.function.IntSupplier;
 import java.util.regex.Pattern;
 
 /**
@@ -52,7 +54,7 @@ public class DecimalValue extends NumericValue {
     //Copied from Saxon 8.8
     private static boolean stripTrailingZerosMethodUnavailable = false;
     private static Method stripTrailingZerosMethod = null;
-    BigDecimal value;
+    final BigDecimal value;
 
     public DecimalValue(BigDecimal decimal) {
         this.value = stripTrailingZeros(decimal);
@@ -163,7 +165,7 @@ public class DecimalValue extends NumericValue {
         } else if (scale < 0) {
             final String s = value.abs().unscaledValue().toString();
 
-            final FastStringBuffer sb = new FastStringBuffer(s.length() + (-scale) + 2);
+            final StringBuilder sb = new StringBuilder(s.length() + (-scale) + 2);
             if (value.signum() < 0) {
                 sb.append('-');
             }
@@ -181,7 +183,7 @@ public class DecimalValue extends NumericValue {
                 return s;
             }
             final int len = s.length();
-            final FastStringBuffer sb = new FastStringBuffer(len + 1);
+            final StringBuilder sb = new StringBuilder(len + 1);
             if (value.signum() < 0) {
                 sb.append('-');
             }
@@ -271,6 +273,23 @@ public class DecimalValue extends NumericValue {
         return value.signum() > 0;
     }
 
+    @Override
+    protected @Nullable IntSupplier createComparisonWith(final NumericValue other) {
+        final IntSupplier comparison;
+        if (other instanceof IntegerValue) {
+            comparison = () -> value.compareTo(new BigDecimal(((IntegerValue)other).value));
+        } else if (other instanceof DecimalValue) {
+            comparison = () -> value.compareTo(((DecimalValue)other).value);
+        } else if (other instanceof DoubleValue) {
+            comparison = () -> value.compareTo(BigDecimal.valueOf(((DoubleValue)other).value));
+        } else if (other instanceof FloatValue) {
+            comparison = () -> value.compareTo(BigDecimal.valueOf(((FloatValue)other).value));
+        } else {
+            return null;
+        }
+        return comparison;
+    }
+
     /* (non-Javadoc)
      * @see org.exist.xquery.value.NumericValue#negate()
      */
@@ -282,14 +301,14 @@ public class DecimalValue extends NumericValue {
      * @see org.exist.xquery.value.NumericValue#ceiling()
      */
     public NumericValue ceiling() throws XPathException {
-        return new DecimalValue(value.setScale(0, BigDecimal.ROUND_CEILING));
+        return new DecimalValue(value.setScale(0, RoundingMode.CEILING));
     }
 
     /* (non-Javadoc)
      * @see org.exist.xquery.value.NumericValue#floor()
      */
     public NumericValue floor() throws XPathException {
-        return new DecimalValue(value.setScale(0, BigDecimal.ROUND_FLOOR));
+        return new DecimalValue(value.setScale(0, RoundingMode.FLOOR));
     }
 
     /* (non-Javadoc)
@@ -298,11 +317,11 @@ public class DecimalValue extends NumericValue {
     public NumericValue round() throws XPathException {
         switch (value.signum()) {
             case -1:
-                return new DecimalValue(value.setScale(0, BigDecimal.ROUND_HALF_DOWN));
+                return new DecimalValue(value.setScale(0, RoundingMode.HALF_DOWN));
             case 0:
                 return this;
             case 1:
-                return new DecimalValue(value.setScale(0, BigDecimal.ROUND_HALF_UP));
+                return new DecimalValue(value.setScale(0, RoundingMode.HALF_UP));
             default:
                 return this;
         }
@@ -324,11 +343,11 @@ public class DecimalValue extends NumericValue {
         }
 
         if (pre >= 0) {
-            return new DecimalValue(value.setScale(pre, BigDecimal.ROUND_HALF_EVEN));
+            return new DecimalValue(value.setScale(pre, RoundingMode.HALF_EVEN));
         } else {
             return new DecimalValue(
                     value.movePointRight(pre).
-                            setScale(0, BigDecimal.ROUND_HALF_EVEN).
+                            setScale(0, RoundingMode.HALF_EVEN).
                             movePointLeft(pre));
         }
     }
@@ -398,7 +417,7 @@ public class DecimalValue extends NumericValue {
 
                 //Copied from Saxon 8.6.1
                 final int scale = Math.max(DIVIDE_PRECISION, Math.max(value.scale(), ((DecimalValue) other).value.scale()));
-                final BigDecimal result = value.divide(((DecimalValue) other).value, scale, BigDecimal.ROUND_HALF_DOWN);
+                final BigDecimal result = value.divide(((DecimalValue) other).value, scale, RoundingMode.HALF_DOWN);
                 return new DecimalValue(result);
             //End of copy
         }
@@ -410,7 +429,7 @@ public class DecimalValue extends NumericValue {
         }
 
         final DecimalValue dv = (DecimalValue) other.convertTo(Type.DECIMAL);
-        final BigInteger quot = value.divide(dv.value, 0, BigDecimal.ROUND_DOWN).toBigInteger();
+        final BigInteger quot = value.divide(dv.value, 0, RoundingMode.DOWN).toBigInteger();
         return new IntegerValue(quot);
     }
 
@@ -423,8 +442,8 @@ public class DecimalValue extends NumericValue {
                 throw new XPathException(ErrorCodes.FOAR0001, "division by zero");
             }
 
-            final BigDecimal quotient = value.divide(((DecimalValue) other).value, 0, BigDecimal.ROUND_DOWN);
-            final BigDecimal remainder = value.subtract(quotient.setScale(0, BigDecimal.ROUND_DOWN).multiply(((DecimalValue) other).value));
+            final BigDecimal quotient = value.divide(((DecimalValue) other).value, 0, RoundingMode.DOWN);
+            final BigDecimal remainder = value.subtract(quotient.setScale(0, RoundingMode.DOWN).multiply(((DecimalValue) other).value));
             return new DecimalValue(remainder);
         } else {
             return ((NumericValue) convertTo(other.getType())).mod(other);
@@ -457,44 +476,6 @@ public class DecimalValue extends NumericValue {
             return new DecimalValue(
                     value.min(((DecimalValue) other.convertTo(Type.DECIMAL)).value));
         }
-    }
-
-    @Override
-    public boolean compareTo(Collator collator, Comparison operator, AtomicValue other)
-            throws XPathException {
-        if (other.isEmpty()) {
-            //Never equal, or inequal...
-            return false;
-        }
-        if (Type.subTypeOf(other.getType(), Type.NUMBER)) {
-            if (isNaN()) {
-                //NaN does not equal itself.
-                if (((NumericValue) other).isNaN()) {
-                    return operator == Comparison.NEQ;
-                }
-            }
-            if (Type.subTypeOf(other.getType(), Type.DECIMAL)) {
-                final DecimalValue otherValue = (DecimalValue) other.convertTo(Type.DECIMAL);
-                switch (operator) {
-                    case EQ:
-                        return compareTo(otherValue) == Constants.EQUAL;
-                    case NEQ:
-                        return compareTo(otherValue) != Constants.EQUAL;
-                    case GT:
-                        return compareTo(otherValue) == Constants.SUPERIOR;
-                    case GTEQ:
-                        return compareTo(otherValue) != Constants.INFERIOR;
-                    case LT:
-                        return compareTo(otherValue) == Constants.INFERIOR;
-                    case LTEQ:
-                        return compareTo(otherValue) != Constants.SUPERIOR;
-                    default:
-                        throw new XPathException("Type error: cannot apply operator to numeric value");
-                }
-            }
-        }
-        //Default to the standard numeric comparison
-        return super.compareTo(collator, operator, other);
     }
 
     public int compareTo(Object o) {

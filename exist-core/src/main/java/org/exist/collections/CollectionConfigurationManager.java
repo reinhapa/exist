@@ -1,21 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.collections;
 
@@ -24,6 +26,7 @@ import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
 import org.exist.Namespaces;
 import org.exist.collections.triggers.TriggerException;
+import org.exist.dom.persistent.BinaryDocument;
 import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.memtree.SAXAdapter;
 import org.exist.security.PermissionDeniedException;
@@ -43,7 +46,6 @@ import org.xml.sax.XMLReader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.concurrent.locks.ReadWriteLock;
 
 /**
@@ -66,8 +68,6 @@ public class CollectionConfigurationManager implements BrokerPoolService {
 
     /** /db/system/config/db **/
     public static final XmldbURI ROOT_COLLECTION_CONFIG_URI = CONFIG_COLLECTION_URI.append(XmldbURI.ROOT_COLLECTION_NAME);
-
-    public static final String COLLECTION_CONFIG_FILENAME = "collection.xconf";
 
     public static final CollectionURI COLLECTION_CONFIG_PATH = new CollectionURI(CONFIG_COLLECTION_URI.getRawCollectionPath());
 
@@ -251,9 +251,16 @@ public class CollectionConfigurationManager implements BrokerPoolService {
             for (final Iterator<DocumentImpl> i = configCollection.iterator(broker); i.hasNext();) {
                 final DocumentImpl confDoc = i.next();
                 if (confDoc.getFileURI().endsWith(CollectionConfiguration.COLLECTION_CONFIG_SUFFIX_URI)) {
+
+                    if (confDoc instanceof BinaryDocument) {
+                        LOG.warn("Found a possible Collection configuration document: " + confDoc.getURI() + ", however it is a Binary document! A user may have stored the document as a Binary document by mistake. Skipping...");
+                        continue;
+                    }
+
                     if (LOG.isTraceEnabled()) {
                         LOG.trace("Reading collection configuration from '" + confDoc.getURI() + "'");
                     }
+
                     final CollectionConfiguration conf = new CollectionConfiguration(broker.getBrokerPool());
 
                     // [ 1807744 ] Invalid collection.xconf causes a non startable database
@@ -278,7 +285,7 @@ public class CollectionConfigurationManager implements BrokerPoolService {
         }
     }
 
-    public CollectionConfiguration getOrCreateCollectionConfiguration(final DBBroker broker, Collection collection) {
+    public CollectionConfiguration getOrCreateCollectionConfiguration(final DBBroker broker, final Collection collection) {
         final CollectionURI path = new CollectionURI(COLLECTION_CONFIG_PATH);
         path.append(collection.getURI().getRawCollectionPath());
 

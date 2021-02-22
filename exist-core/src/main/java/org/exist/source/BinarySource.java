@@ -1,35 +1,54 @@
+/*
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
+ *
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 package org.exist.source;
 
-import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
 import org.exist.storage.DBBroker;
-import org.exist.util.io.FastByteArrayInputStream;
+import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
 
 import java.io.*;
+import java.util.Arrays;
 
 public class BinarySource extends AbstractSource {
 
     //TODO replace this with a streaming approach
-    private byte[] data;
-    private boolean checkEncoding = false;
+    private final byte[] data;
+    private final boolean checkEncoding;
     private String encoding = "UTF-8";
 
-    public BinarySource(byte[] data, boolean checkXQEncoding) {
+    public BinarySource(final byte[] data, final boolean checkXQEncoding) {
+        super(hashKey(data));
         this.data = data;
         this.checkEncoding = checkXQEncoding;
     }
 
+    @Override
     public String path() {
-        return type();
+        return null;
     }
 
     @Override
     public String type() {
         return "Binary";
-    }
-
-    public Object getKey() {
-        return data;
     }
 
     @Override
@@ -42,15 +61,18 @@ public class BinarySource extends AbstractSource {
         return Source.Validity.VALID;
     }
 
+    @Override
     public Reader getReader() throws IOException {
         checkEncoding();
         return new InputStreamReader(getInputStream(), encoding);
     }
 
-    public InputStream getInputStream() throws IOException {
-        return new FastByteArrayInputStream(data);
+    @Override
+    public InputStream getInputStream() {
+        return new UnsynchronizedByteArrayInputStream(data);
     }
 
+    @Override
     public String getContent() throws IOException {
         checkEncoding();
         return new String(data, encoding);
@@ -67,8 +89,13 @@ public class BinarySource extends AbstractSource {
         }
     }
 
-	@Override
-	public void validate(Subject subject, int perm) throws PermissionDeniedException {
-		// TODO protected?
-	}
+    @Override
+    public void validate(final Subject subject, final int perm) {
+        // TODO protected?
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(data);
+    }
 }

@@ -1,23 +1,23 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2004-2011 The eXist Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *  
- * This program is distributed in the hope that it will be useful,
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *  
- *  $Id$
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery.functions.fn;
 
@@ -55,6 +55,8 @@ import org.exist.xquery.value.Type;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
+import java.util.Objects;
+
 /**
  * Implements the fn:deep-equal library function.
  *
@@ -64,7 +66,7 @@ public class FunDeepEqual extends CollatingFunction {
 
     protected static final Logger logger = LogManager.getLogger(FunDeepEqual.class);
 
-    public final static FunctionSignature signatures[] = {
+    public final static FunctionSignature[] signatures = {
         new FunctionSignature(
             new QName("deep-equal", Function.BUILTIN_FUNCTION_NS),
             "Returns true() iff every item in $items-1 is deep-equal to the item " +
@@ -187,8 +189,8 @@ public class FunDeepEqual extends CollatingFunction {
                 try {
                     final AtomicValue av = (AtomicValue) a;
                     final AtomicValue bv = (AtomicValue) b;
-                    if (Type.subTypeOf(av.getType(), Type.NUMBER) &&
-                        Type.subTypeOf(bv.getType(), Type.NUMBER)) {
+                    if (Type.subTypeOfUnion(av.getType(), Type.NUMBER) &&
+                        Type.subTypeOfUnion(bv.getType(), Type.NUMBER)) {
                         //or if both values are NaN
                         if (((NumericValue) a).isNaN() && ((NumericValue) b).isNaN())
                             {return true;}
@@ -358,7 +360,7 @@ public class FunDeepEqual extends CollatingFunction {
     }
 
     private static boolean safeEquals(Object a, Object b) {
-        return a == null ? b == null : a.equals(b);
+        return Objects.equals(a, b);
     }
 
 }

@@ -1,33 +1,41 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2001-2018 The eXist Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 package org.exist.http.urlrewrite;
 
+import com.evolvedbinary.j8fu.function.FunctionE;
+import com.evolvedbinary.j8fu.tuple.Tuple2;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.fluent.Executor;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.entity.ContentType;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.exist.TestUtils;
 import org.exist.test.ExistWebServer;
-import org.exist.util.io.FastByteArrayOutputStream;
+import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.exist.xmldb.XmldbURI;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -36,6 +44,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.http.urlrewrite.XQueryURLRewrite.XQUERY_CONTROLLER_FILENAME;
 import static org.junit.Assert.assertEquals;
@@ -47,7 +56,6 @@ public class URLRewritingTest {
     private static final XmldbURI TEST_COLLECTION = XmldbURI.create("/db/apps").append(TEST_COLLECTION_NAME);
 
     private static final String TEST_CONTROLLER = "xquery version \"3.1\";\n<controller>{fn:current-dateTime()}</controller>";
-    private static Executor executor = null;
 
     @ClassRule
     public static final ExistWebServer existWebServer = new ExistWebServer(true, false, true, true, false);
@@ -59,45 +67,51 @@ public class URLRewritingTest {
         final String testDocument = "<hello>world</hello>";
 
         final String storeDocUri = getRestUri() + TEST_COLLECTION.append(nestedCollectionName).append(docName);
-        HttpResponse response = executor.execute(Request
+        final Request storeRequest = Request
                 .Put(storeDocUri)
-                .bodyString(testDocument, ContentType.APPLICATION_XML)
-        ).returnResponse();
-        assertEquals(HttpStatus.SC_CREATED, response.getStatusLine().getStatusCode());
+                .bodyString(testDocument, ContentType.APPLICATION_XML);
+        final int storeResponseStatusCode = withHttpExecutor(executor -> executor.execute(storeRequest).returnResponse().getStatusLine().getStatusCode());
+        assertEquals(HttpStatus.SC_CREATED, storeResponseStatusCode);
 
         final String retrieveDocUri = getAppsUri() + "/" + TEST_COLLECTION_NAME.append(nestedCollectionName).append(docName);
-        response = executor.execute(Request
-                .Get(retrieveDocUri)
-        ).returnResponse();
-        assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
-        final String responseBody;
-        try (final FastByteArrayOutputStream baos = new FastByteArrayOutputStream((int)response.getEntity().getContentLength())) {
-            response.getEntity().writeTo(baos);
-            responseBody = baos.toString(UTF_8);
-        }
-        assertTrue(responseBody.matches("<controller>.+</controller>"));
+        final Request retrieveRequest = Request
+                .Get(retrieveDocUri);
+        final Tuple2<Integer, String> retrieveResponseStatusCodeAndBody = withHttpExecutor(executor -> {
+            final HttpResponse response = executor.execute(retrieveRequest).returnResponse();
+            final String responseBody;
+            try (final UnsynchronizedByteArrayOutputStream baos = new UnsynchronizedByteArrayOutputStream((int)response.getEntity().getContentLength())) {
+                response.getEntity().writeTo(baos);
+                responseBody = baos.toString(UTF_8);
+            }
+            return Tuple(response.getStatusLine().getStatusCode(), responseBody);
+        });
+        assertEquals(HttpStatus.SC_OK, retrieveResponseStatusCodeAndBody._1.intValue());
+        assertTrue(retrieveResponseStatusCodeAndBody._2.matches("<controller>.+</controller>"));
     }
 
     @BeforeClass
     public static void setup() throws IOException {
-        executor = Executor.newInstance()
-                .auth(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)
-                .authPreemptive("localhost");
-
-        final HttpResponse response = executor.execute(Request
+        final Request request = Request
                 .Put(getRestUri() + TEST_COLLECTION + "/" + XQUERY_CONTROLLER_FILENAME)
-                .bodyString(TEST_CONTROLLER, ContentType.create("application/xquery"))
-        ).returnResponse();
-        assertEquals(HttpStatus.SC_CREATED, response.getStatusLine().getStatusCode());
+                .bodyString(TEST_CONTROLLER, ContentType.create("application/xquery"));
+
+        final int statusCode = withHttpExecutor(executor ->
+                executor.execute(request).returnResponse().getStatusLine().getStatusCode()
+        );
+
+        assertEquals(HttpStatus.SC_CREATED, statusCode);
     }
 
     @AfterClass
     public static void cleanup() throws IOException {
+        final Request request = Request
+                .Delete(getRestUri() + TEST_COLLECTION);
 
-        final HttpResponse response = executor.execute(Request
-                .Delete(getRestUri() + TEST_COLLECTION)
-        ).returnResponse();
-        assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
+        final int statusCode = withHttpExecutor(executor ->
+                executor.execute(request).returnResponse().getStatusLine().getStatusCode()
+        );
+
+        assertEquals(HttpStatus.SC_OK, statusCode);
     }
 
     private static String getServerUri() {
@@ -110,5 +124,24 @@ public class URLRewritingTest {
 
     private static String getAppsUri() {
         return getServerUri() + "/apps";
+    }
+
+    private static <T> T withHttpClient(final FunctionE<HttpClient, T, IOException> fn) throws IOException {
+        try (final CloseableHttpClient client = HttpClientBuilder
+                .create()
+                .disableAutomaticRetries()
+                .build()) {
+            return fn.apply(client);
+        }
+    }
+
+    private static <T> T withHttpExecutor(final FunctionE<Executor, T, IOException> fn) throws IOException {
+        return withHttpClient(client -> {
+            final Executor executor = Executor
+                    .newInstance(client)
+                    .auth(TestUtils.ADMIN_DB_USER, TestUtils.ADMIN_DB_PWD)
+                    .authPreemptive(new HttpHost("localhost", existWebServer.getPort()));
+            return fn.apply(executor);
+        });
     }
 }

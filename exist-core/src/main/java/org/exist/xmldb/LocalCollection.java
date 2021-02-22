@@ -1,21 +1,23 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2001-2015 The eXist Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xmldb;
 
@@ -373,7 +375,7 @@ public class LocalCollection extends AbstractLocal implements EXistCollection {
                     default:
                         throw new XMLDBException(ErrorCodes.INVALID_RESOURCE, "Unknown resource type");
                 }
-                ((AbstractEXistResource) r).setMimeType(document.getMetadata().getMimeType());
+                ((AbstractEXistResource) r).setMimeType(document.getMimeType());
                 return r;
             }
         });
@@ -504,7 +506,7 @@ public class LocalCollection extends AbstractLocal implements EXistCollection {
 
                     // Include only when (1) lockToken is present or (2)
                     // lockToken indicates that it is not a null resource
-                    final LockToken lock = doc.getMetadata().getLockToken();
+                    final LockToken lock = doc.getLockToken();
                     if (lock == null || (!lock.isNullResource())) {
                         allresources.add(doc.getFileURI().toString());
                     }
@@ -514,7 +516,7 @@ public class LocalCollection extends AbstractLocal implements EXistCollection {
         });
 
         // Copy content of list into String array.
-        return resources.toArray(new String[resources.size()]);
+        return resources.toArray(new String[0]);
     }
 
     @Override
@@ -692,12 +694,12 @@ public class LocalCollection extends AbstractLocal implements EXistCollection {
 
                 //Notice : the document should now have a LockMode.WRITE_LOCK update lock
                 //TODO : check that no exception occurs in order to allow it to be released
-                info.getDocument().getMetadata().setMimeType(res.getMimeType(broker, transaction));
+                info.getDocument().setMimeType(res.getMimeType(broker, transaction));
                 if (res.datecreated != null) {
-                    info.getDocument().getMetadata().setCreated(res.datecreated.getTime());
+                    info.getDocument().setCreated(res.datecreated.getTime());
                 }
                 if (res.datemodified != null) {
-                    info.getDocument().getMetadata().setLastModified(res.datemodified.getTime());
+                    info.getDocument().setLastModified(res.datemodified.getTime());
                 }
 
 
@@ -785,7 +787,7 @@ public class LocalCollection extends AbstractLocal implements EXistCollection {
 
     @Override
     public Date getCreationTime() throws XMLDBException {
-        return this.<Date>read().apply((collection, broker, transaction) -> new Date(collection.getCreationTime()));
+        return this.<Date>read().apply((collection, broker, transaction) -> new Date(collection.getCreated()));
     }
 
     @Override

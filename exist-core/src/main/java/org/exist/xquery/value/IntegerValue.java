@@ -1,32 +1,36 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2001-2007 The eXist Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *
- *  $Id$
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery.value;
 
 import com.ibm.icu.text.Collator;
+import org.exist.xquery.Constants;
 import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.XPathException;
 
+import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
+import java.util.function.IntSupplier;
 
 /**
  * Definition: integer is derived from decimal by fixing the value of fractionDigits to be 0.
@@ -66,7 +70,7 @@ public class IntegerValue extends NumericValue {
 
     private static final BigInteger LARGEST_UNSIGNED_BYTE = new BigInteger("255");
 
-    private final BigInteger value;
+    final BigInteger value;
     private final int type;
 
     public IntegerValue(final long value) {
@@ -221,6 +225,23 @@ public class IntegerValue extends NumericValue {
     }
 
     @Override
+    protected @Nullable IntSupplier createComparisonWith(final NumericValue other) {
+        final IntSupplier comparison;
+        if (other instanceof IntegerValue) {
+            comparison = () -> value.compareTo(((IntegerValue)other).value);
+        } else if (other instanceof DecimalValue) {
+            comparison = () -> new BigDecimal(value).compareTo(((DecimalValue)other).value);
+        } else if (other instanceof DoubleValue) {
+            comparison = () -> new BigDecimal(value).compareTo(BigDecimal.valueOf(((DoubleValue)other).value));
+        } else if (other instanceof FloatValue) {
+            comparison = () -> new BigDecimal(value).compareTo(BigDecimal.valueOf(((FloatValue)other).value));
+        } else {
+            return null;
+        }
+        return comparison;
+    }
+
+    @Override
     public AtomicValue convertTo(final int requiredType) throws XPathException {
         if (this.type == requiredType) {
             return this;
@@ -360,7 +381,7 @@ public class IntegerValue extends NumericValue {
             final BigDecimal d = new BigDecimal(value);
             final BigDecimal od = new BigDecimal(((IntegerValue) other).value);
             final int scale = Math.max(18, Math.max(d.scale(), od.scale()));
-            return new DecimalValue(d.divide(od, scale, BigDecimal.ROUND_HALF_DOWN));
+            return new DecimalValue(d.divide(od, scale, RoundingMode.HALF_DOWN));
         } else {
             //TODO : review type promotion
             return ((ComputableValue) convertTo(other.getType())).div(other);

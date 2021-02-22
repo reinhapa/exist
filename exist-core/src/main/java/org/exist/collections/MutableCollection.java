@@ -1,21 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2015 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.collections;
 
@@ -55,7 +57,7 @@ import org.exist.util.LockException;
 import org.exist.util.MimeType;
 import org.exist.util.XMLReaderObjectFactory;
 import org.exist.util.XMLReaderObjectFactory.VALIDATION_SETTING;
-import org.exist.util.io.FastByteArrayInputStream;
+import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
 import org.exist.util.serializer.DOMStreamer;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.Constants;
@@ -110,7 +112,7 @@ public class MutableCollection implements Collection {
     private long created;
     private volatile boolean isTempCollection;
     private final Permission permissions;
-    private final CollectionMetadata collectionMetadata;
+    @Deprecated private CollectionMetadata collectionMetadata = null;
 
     /**
      * Constructs a Collection Object (not yet persisted)
@@ -159,7 +161,6 @@ public class MutableCollection implements Collection {
         this.permissions = permissions != null ? permissions : PermissionFactory.getDefaultCollectionPermission(broker.getBrokerPool().getSecurityManager());
         this.created = created > 0 ? created : System.currentTimeMillis();
         this.lockManager = broker.getBrokerPool().getLockManager();
-        this.collectionMetadata = new CollectionMetadata(this);
         this.subCollections = subCollections != null ? subCollections : new LinkedHashSet<>();
         this.documents = documents != null ? documents : new LinkedHashMap<>();
     }
@@ -320,15 +321,6 @@ public class MutableCollection implements Collection {
     }
 
     @Override
-    public void update(final DBBroker broker, final Collection child) throws PermissionDeniedException, LockException {
-        final XmldbURI childName = child.getURI().lastSegment();
-        try(final ManagedCollectionLock collectionLock = lockManager.acquireCollectionWriteLock(path)) {
-            subCollections.remove(childName);
-            subCollections.add(childName);
-        }
-    }
-
-    @Override
     public void addDocument(final Txn transaction, final DBBroker broker, final DocumentImpl doc)
             throws PermissionDeniedException, LockException {
         addDocument(transaction, broker, doc, null);
@@ -477,7 +469,7 @@ public class MutableCollection implements Collection {
     @Override
     public DocumentSet allDocs(final DBBroker broker, final MutableDocumentSet docs, final boolean recursive,
             final LockedDocumentMap lockMap, final LockMode lockType) throws LockException, PermissionDeniedException {
-        XmldbURI uris[] = null;
+        XmldbURI[] uris = null;
 
         try(final ManagedCollectionLock collectionLock = lockManager.acquireCollectionReadLock(path)) {
             if (getPermissionsNoLock().validate(broker.getCurrentSubject(), Permission.READ)) {
@@ -811,8 +803,12 @@ public class MutableCollection implements Collection {
         return permissions;
     }
 
+    @Deprecated
     @Override
     public CollectionMetadata getMetadata() {
+        if (collectionMetadata == null) {
+            collectionMetadata = new CollectionMetadata(this);
+        }
         return collectionMetadata;
     }
 
@@ -1538,16 +1534,12 @@ public class MutableCollection implements Collection {
      * @param document The current/new document
      */
     private void manageDocumentInformation(final DocumentImpl oldDoc, final DocumentImpl document) {
-        final DocumentMetadata metadata;
         if (oldDoc != null) {
-            metadata = oldDoc.getMetadata();
-            metadata.setCreated(oldDoc.getMetadata().getCreated());
+            document.setCreated(oldDoc.getCreated());
             document.setPermissions(oldDoc.getPermissions());
         } else {
-            metadata = new DocumentMetadata();
-            metadata.setCreated(System.currentTimeMillis());
+            document.setCreated(System.currentTimeMillis());
         }
-        document.setMetadata(metadata);
     }
 
      /**
@@ -1556,9 +1548,7 @@ public class MutableCollection implements Collection {
       * @param document The document whose modification time should be updated
       */
     private void updateModificationTime(final DocumentImpl document) {
-        final DocumentMetadata metadata = document.getMetadata();
-        metadata.setLastModified(System.currentTimeMillis());
-        document.setMetadata(metadata);
+        document.setLastModified(System.currentTimeMillis());
     }
     
     /**
@@ -1617,7 +1607,7 @@ public class MutableCollection implements Collection {
 
     @Override
     public BinaryDocument addBinaryResource(final Txn transaction, final DBBroker broker, final XmldbURI name, final byte[] data, final String mimeType, final Date created, final Date modified) throws EXistException, PermissionDeniedException, LockException, TriggerException,IOException {
-        return addBinaryResource(transaction, broker, name, new FastByteArrayInputStream(data), mimeType, data.length, created, modified);
+        return addBinaryResource(transaction, broker, name, new UnsynchronizedByteArrayInputStream(data), mimeType, data.length, created, modified);
     }
 
     @Override
@@ -1704,16 +1694,12 @@ public class MutableCollection implements Collection {
             if (!broker.preserveOnCopy(preserve)) {
                 blob.copyOf(broker, blob, oldDoc);
             }
-            if (blob.getMetadata() == null) {
-                blob.setMetadata(new DocumentMetadata());
-            }
-            final DocumentMetadata metadata = blob.getMetadata();
-            metadata.setMimeType(mimeType == null ? MimeType.BINARY_TYPE.getName() : mimeType);
+            blob.setMimeType(mimeType == null ? MimeType.BINARY_TYPE.getName() : mimeType);
             if (created != null) {
-                metadata.setCreated(created.getTime());
+                blob.setCreated(created.getTime());
             }
             if (modified != null) {
-                metadata.setLastModified(modified.getTime());
+                blob.setLastModified(modified.getTime());
             }
             blob.setContentLength(size);
 
@@ -1782,12 +1768,12 @@ public class MutableCollection implements Collection {
     }
 
     @Override
-    public void setCreationTime(final long ms) {
+    public void setCreated(final long ms) {
         created = ms;
     }
 
     @Override
-    public long getCreationTime() {
+    public long getCreated() {
         return created;
     }
 

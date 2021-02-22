@@ -1,3 +1,24 @@
+(:
+ : eXist-db Open Source Native XML Database
+ : Copyright (C) 2001 The eXist-db Authors
+ :
+ : info@exist-db.org
+ : http://www.exist-db.org
+ :
+ : This library is free software; you can redistribute it and/or
+ : modify it under the terms of the GNU Lesser General Public
+ : License as published by the Free Software Foundation; either
+ : version 2.1 of the License, or (at your option) any later version.
+ :
+ : This library is distributed in the hope that it will be useful,
+ : but WITHOUT ANY WARRANTY; without even the implied warranty of
+ : MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ : Lesser General Public License for more details.
+ :
+ : You should have received a copy of the GNU Lesser General Public
+ : License along with this library; if not, write to the Free Software
+ : Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ :)
 xquery version "3.1";
 
 module namespace facet="http://exist-db.org/xquery/lucene/test/facets";
@@ -764,4 +785,23 @@ function facet:avoid-range-index-conflict-city() {
             $persons-facet?none || " city values were calculated without id range indexes present"
         else
             ()
+};
+
+declare
+    %test:args("abstract:vogel", "abstract")
+    %test:assertEquals("<exist:field xmlns:exist='http://exist.sourceforge.net/NS/exist'>Es zwitschern die <exist:match>Vögel</exist:match> im Walde</exist:field>")
+    %test:args("abstract:(weht AND wind)", "abstract")
+    %test:assertEquals("<exist:field xmlns:exist='http://exist.sourceforge.net/NS/exist'>Über dem Walde <exist:match>weht</exist:match> ein <exist:match>Wind</exist:match></exist:field>")
+    %test:args('abstract:"Walde weht ein Wind"', "abstract")
+    %test:assertEquals("<exist:field xmlns:exist='http://exist.sourceforge.net/NS/exist'>Über dem <exist:match>Walde weht ein Wind</exist:match></exist:field>")
+    %test:args('abstract:"Götter sich streiten"', "abstract")
+    %test:assertEquals("<exist:field xmlns:exist='http://exist.sourceforge.net/NS/exist'>Da nun einmal der Himmel zerrissen und die <exist:match>Götter sich streiten</exist:match></exist:field>")
+    %test:args('title:streiten', "title")
+    %test:assertEquals("<exist:field xmlns:exist='http://exist.sourceforge.net/NS/exist'><exist:match>Streiten</exist:match> und Hoffen</exist:field>")
+    %test:args('title:"Streiten und Hoffen"', "title")
+    %test:assertEquals("<exist:field xmlns:exist='http://exist.sourceforge.net/NS/exist'><exist:match>Streiten und Hoffen</exist:match></exist:field>")
+function facet:query-field-expand-matches($query as xs:string, $field as xs:string) {
+    let $result := doc("/db/lucenetest/documents.xml")//document[ft:query(., $query, map { "fields": $field })]
+    return
+        ft:highlight-field-matches($result, $field)[.//exist:match]
 };

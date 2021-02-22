@@ -1,21 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2016 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.security.internal;
 
@@ -79,10 +81,9 @@ import org.quartz.SimpleTrigger;
  * There's only one SecurityManager for each database instance, which
  * may be obtained by {@link BrokerPool#getSecurityManager()}.
  * 
- * Users and groups are stored in the system collection, in document
- * users.xml. While it is possible to edit this file by hand, it
- * may lead to unexpected results, since SecurityManager reads 
- * users.xml only during database startup and shutdown.
+ * Users and groups are stored per-realm within the
+ * system collection: /db/system/security. Each realm
+ * has its own sub-collection.
  */
 //<!-- Central user configuration. Editing this document will cause the security to reload and update its internal database. Please handle with care! -->
 @ConfigurationClass("security-manager")
@@ -850,10 +851,11 @@ public class SecurityManagerImpl implements SecurityManager, BrokerPoolService {
 	            	        }
             			}
                 	} else {
-                		final Account account = new AccountImpl( realm, conf );
+                		final Account account = new AccountImpl(realm, conf);
                 		if (account.getGroups().length == 0) {
                 		    try {
                                 account.setPrimaryGroup(realm.getGroup(SecurityManager.UNKNOWN_GROUP));
+                                LOG.warn("Account '" + account.getName() + "' has no groups, but every account must have at least 1 group. Assigned group: " + SecurityManager.UNKNOWN_GROUP);
                             } catch (final PermissionDeniedException e) {
                 		        throw new ConfigurationException("Account has no group, unable to default to " + SecurityManager.UNKNOWN_GROUP + ": " + e.getMessage(), e);
                             }

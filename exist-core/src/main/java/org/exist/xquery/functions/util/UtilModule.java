@@ -1,21 +1,23 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2001-2018 The eXist Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery.functions.util;
 
@@ -71,14 +73,17 @@ public class UtilModule extends AbstractInternalModule {
             new FunctionDef(Eval.FS_EVAL[0], Eval.class),
             new FunctionDef(Eval.FS_EVAL[1], Eval.class),
             new FunctionDef(Eval.FS_EVAL[2], Eval.class),
+            new FunctionDef(Eval.FS_EVAL[3], Eval.class),
             new FunctionDef(Eval.FS_EVAL_WITH_CONTEXT[0], Eval.class),
             new FunctionDef(Eval.FS_EVAL_WITH_CONTEXT[1], Eval.class),
+            new FunctionDef(Eval.FS_EVAL_WITH_CONTEXT[2], Eval.class),
             new FunctionDef(Eval.FS_EVAL_INLINE[0], Eval.class),
             new FunctionDef(Eval.FS_EVAL_INLINE[1], Eval.class),
-
+            new FunctionDef(Eval.FS_EVAL_INLINE[2], Eval.class),
             new FunctionDef(Eval.FS_EVAL_AND_SERIALIZE[0], Eval.class),
             new FunctionDef(Eval.FS_EVAL_AND_SERIALIZE[1], Eval.class),
             new FunctionDef(Eval.FS_EVAL_AND_SERIALIZE[2], Eval.class),
+            new FunctionDef(Eval.FS_EVAL_AND_SERIALIZE[3], Eval.class),
             new FunctionDef(Compile.signatures[0], Compile.class),
             new FunctionDef(Compile.signatures[1], Compile.class),
             new FunctionDef(Compile.signatures[2], Compile.class),
@@ -145,6 +150,7 @@ public class UtilModule extends AbstractInternalModule {
             new FunctionDef(Base64Functions.signatures[0], Base64Functions.class),
             new FunctionDef(Base64Functions.signatures[1], Base64Functions.class),
             new FunctionDef(Base64Functions.signatures[2], Base64Functions.class),
+            new FunctionDef(Base64Functions.signatures[3], Base64Functions.class),
             new FunctionDef(BaseConversionFunctions.FNS_INT_TO_OCTAL, BaseConversionFunctions.class),
             new FunctionDef(BaseConversionFunctions.FNS_OCTAL_TO_INT, BaseConversionFunctions.class),
             new FunctionDef(LineNumber.signature, LineNumber.class)
@@ -213,11 +219,11 @@ public class UtilModule extends AbstractInternalModule {
     }
 
     static FunctionSignature functionSignature(final String name, final String description, final FunctionReturnSequenceType returnType, final FunctionParameterSequenceType... paramTypes) {
-        return FunctionDSL.functionSignature(new QName(name, NAMESPACE_URI), description, returnType, paramTypes);
+        return FunctionDSL.functionSignature(new QName(name, NAMESPACE_URI, PREFIX), description, returnType, paramTypes);
     }
 
     static FunctionSignature[] functionSignatures(final String name, final String description, final FunctionReturnSequenceType returnType, final FunctionParameterSequenceType[][] variableParamTypes) {
-        return FunctionDSL.functionSignatures(new QName(name, NAMESPACE_URI), description, returnType, variableParamTypes);
+        return FunctionDSL.functionSignatures(new QName(name, NAMESPACE_URI, PREFIX), description, returnType, variableParamTypes);
     }
 }
 

@@ -1,27 +1,28 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2009 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * $Id$
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
@@ -56,19 +57,19 @@ public final class FastQSort {
 	private final static int M = 10;
 	private final static double LOG2 = Math.log(2.0);
 	
-	private final static <C extends Comparable<? super C>> void IntroSort(C a[], int lo, int hi)
+	private final static <C extends Comparable<? super C>> void IntroSort(C[] a, int lo, int hi)
 	{
 		IntroSortLoop(a,lo,hi,2*(int)Math.floor(Math.log(hi-lo+1)/LOG2));
 		InsertionSort.sort(a,lo,hi);
 	}
 
-	private final static <C extends Comparable<? super C>> void IntroSort(C a[], int lo, int hi, int b[])
+	private final static <C extends Comparable<? super C>> void IntroSort(C[] a, int lo, int hi, int[] b)
 	{
 		IntroSortLoop(a,lo,hi,b,2*(int)Math.floor(Math.log(hi-lo+1)/LOG2));
 		InsertionSort.sort(a,lo,hi,b);
 	}
 	
-	private final static <C> void IntroSort(C a[], Comparator<C> comp, int lo, int hi)
+	private final static <C> void IntroSort(C[] a, Comparator<C> comp, int lo, int hi)
 	{
 		IntroSortLoop(a,comp,lo,hi,2*(int)Math.floor(Math.log(hi-lo+1)/LOG2));
 		InsertionSort.sort(a,comp,lo,hi);
@@ -80,19 +81,19 @@ public final class FastQSort {
 		InsertionSort.sort(a,lo,hi);
 	}
 	
-	private final static void IntroSort(long a[], int lo, int hi, Object b[])
+	private final static void IntroSort(long[] a, int lo, int hi, Object[] b)
 	{
 		IntroSortLoop(a,lo,hi,b,2*(int)Math.floor(Math.log(hi-lo+1)/LOG2));
 		InsertionSort.sort(a,lo,hi,b);
 	}
 	
-	private final static void IntroSortByNodeId(NodeProxy a[], int lo, int hi)
+	private final static void IntroSortByNodeId(NodeProxy[] a, int lo, int hi)
 	{
 		IntroSortLoopByNodeId(a,lo,hi,2*(int)Math.floor(Math.log(hi-lo+1)/LOG2));
 		InsertionSort.sortByNodeId(a,lo,hi);
 	}
 	
-	private final static <C extends Comparable<? super C>> void IntroSortLoop(C a[], int l, int r, int maxdepth)
+	private final static <C extends Comparable<? super C>> void IntroSortLoop(C[] a, int l, int r, int maxdepth)
 	//----------------------------------------------------
 	{
 		while ( (r - l) > M ) {
@@ -147,7 +148,7 @@ public final class FastQSort {
 		}
 	}
 
-	private final static <C extends Comparable<? super C>> void IntroSortLoop(C a[], int l, int r, int b[], int maxdepth)
+	private final static <C extends Comparable<? super C>> void IntroSortLoop(C[] a, int l, int r, int[] b, int maxdepth)
 	//----------------------------------------------------
 	{
 		while ( (r - l) > M ) {
@@ -212,7 +213,7 @@ public final class FastQSort {
 		}
 	}
 
-	private final static <C> void IntroSortLoop(C a[], Comparator<C> comp, int l, int r, int maxdepth)
+	private final static <C> void IntroSortLoop(C[] a, Comparator<C> comp, int l, int r, int maxdepth)
 	//----------------------------------------------------
 	{
 		while ( (r - l) > M ) {
@@ -320,7 +321,7 @@ public final class FastQSort {
 		}
 	}
 
-	private final static void IntroSortLoop(long a[], int l, int r, Object b[], int maxdepth)
+	private final static void IntroSortLoop(long[] a, int l, int r, Object[] b, int maxdepth)
 	//----------------------------------------------------
 	{
 		while ( (r - l) > M ) {
@@ -385,7 +386,7 @@ public final class FastQSort {
 		}
 	}
 	
-	private final static void IntroSortLoopByNodeId(NodeProxy a[], int l, int r, int maxdepth)
+	private final static void IntroSortLoopByNodeId(NodeProxy[] a, int l, int r, int maxdepth)
 	//----------------------------------------------------
 	{
 		while ( (r - l) > M ) {
@@ -469,7 +470,7 @@ public final class FastQSort {
 		IntroSortByNodeId(a, lo, hi);
 	}
 
-	public static void sort(long[] a, int lo, int hi, Object b[]) {
+	public static void sort(long[] a, int lo, int hi, Object[] b) {
 		if (lo >= hi)
 			{return;} // just one item, doesn't need sorting
 		IntroSort(a, lo, hi, b);
@@ -489,7 +490,7 @@ public final class FastQSort {
 				"Heinz"
 			};
 
-            for (String s : a) l.add(s);
+            l.addAll(Arrays.asList(a));
 		} else {
 			System.err.println("Ordering file "+args[0]+"\n");
 			try(final java.io.BufferedReader is=new java.io.BufferedReader(new java.io.FileReader(args[0]))) {

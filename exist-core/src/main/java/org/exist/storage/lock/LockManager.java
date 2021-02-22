@@ -1,21 +1,34 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2016 The eXist Project
- *  http://exist-db.org
+ * Copyright (C) 2014, Evolved Binary Ltd
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * This file was originally ported from FusionDB to eXist-db by
+ * Evolved Binary, for the benefit of the eXist-db Open Source community.
+ * Only the ported code as it appears in this file, at the time that
+ * it was contributed to eXist-db, was re-licensed under The GNU
+ * Lesser General Public License v2.1 only for use in eXist-db.
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This license grant applies only to a snapshot of the code as it
+ * appeared when ported, it does not offer or infer any rights to either
+ * updates of this source code or access to the original source code.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * The GNU Lesser General Public License v2.1 only license follows.
+ *
+ * ---------------------------------------------------------------------
+ *
+ * Copyright (C) 2014, Evolved Binary Ltd
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.storage.lock;
 
@@ -563,7 +576,12 @@ public class LockManager {
      * @return true if a WRITE_LOCK is held
      */
     public boolean isDocumentLockedForWrite(final XmldbURI documentPath) {
-        final MultiLock existingLock = getDocumentLock(documentPath.toString());
+        final MultiLock existingLock;
+        if (!usePathLocksForDocuments) {
+            existingLock = getDocumentLock(documentPath.toString());
+        } else {
+            existingLock = getPathLock(documentPath.toString());
+        }
         return existingLock.getWriteLockCount() > 0;
     }
 
@@ -575,8 +593,55 @@ public class LockManager {
      * @return true if a READ_LOCK is held
      */
     public boolean isDocumentLockedForRead(final XmldbURI documentPath) {
-        final MultiLock existingLock = getDocumentLock(documentPath.toString());
+        final MultiLock existingLock;
+        if (!usePathLocksForDocuments) {
+            existingLock = getDocumentLock(documentPath.toString());
+        } else {
+            existingLock = getPathLock(documentPath.toString());
+        }
         return existingLock.getReadLockCount() > 0;
+    }
+
+    /**
+     * Returns the LockMode that should be used for accessing
+     * a Collection when that access is just for the purposes
+     * or accessing a document(s) within the Collection.
+     *
+     * When Path Locks are enabled for Documents, both Collections and
+     * Documents share the same lock domain, a path based tree hierarchy.
+     * With a shared lock-hierarchy, if we were to READ_LOCK a Collection
+     * and then request a WRITE_LOCK for a Document in that Collection we
+     * would reach a dead-lock situation. To avoid this, if this method is
+     * called like
+     * {@code relativeCollectionLockMode(LockMode.READ_LOCK, LockMode.WRITE_LOCK)}
+     * it will return a WRITE_LOCK. That is to say that to aid dealock-avoidance,
+     * this function may return a stricter locking mode than the {@code desiredCollectionLockMode}.
+     *
+     * When Path Locks are disabled (the default) for Documents, Collection and Documents
+     * have independent locking domains. In this case this function will always return
+     * the {@code desiredCollectionLockMode}.
+     *
+     * @param desiredCollectionLockMode The desired lock mode for the Collection.
+     * @param documentLockMode The lock mode that will be used for subsequent document operations in the Collection.
+     *
+     * @return The lock mode that should be used for accessing the Collection.
+     */
+    public Lock.LockMode relativeCollectionLockMode(final Lock.LockMode desiredCollectionLockMode,
+            final Lock.LockMode documentLockMode) {
+        if (!usePathLocksForDocuments) {
+            return desiredCollectionLockMode;
+
+        } else {
+            switch (documentLockMode) {
+                case NO_LOCK:
+                case INTENTION_READ:
+                case READ_LOCK:
+                    return Lock.LockMode.READ_LOCK;
+
+                default:
+                    return Lock.LockMode.WRITE_LOCK;
+            }
+        }
     }
 
     /**

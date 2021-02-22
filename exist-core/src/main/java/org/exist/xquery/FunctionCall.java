@@ -1,23 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2012 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- *  $Id$
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery;
 
@@ -91,7 +91,7 @@ public class FunctionCall extends Function {
                 expression = new Atomize(context, expression);
         }
         
-        if(Type.subTypeOf(returnType.getPrimaryType(), Type.NUMBER)) {
+        if(Type.subTypeOfUnion(returnType.getPrimaryType(), Type.NUMBER)) {
                 expression = new UntypedValueCheck(context, returnType.getPrimaryType(), expression, new Error(Error.FUNC_RETURN_TYPE));
         } else if(returnType.getPrimaryType() != Type.ITEM) {
                 expression = new DynamicTypeCheck(context, returnType.getPrimaryType(), expression);
@@ -100,35 +100,6 @@ public class FunctionCall extends Function {
 
     public UserDefinedFunction getFunction() {
         return functionDef;
-    }
-
-	/**
-	 * For calls to functions in external modules, check that the instance of the function we were
-	 * bound to matches the current implementation of the module bound to our context.  If not,
-	 * rebind to the correct instance, but don't bother resetting the signature since it's guaranteed
-	 * (I hope!) to be the same.
-	 * @throws XPathException 
-	 */
-	private void updateFunction() throws XPathException {
-		if (functionDef.getContext() instanceof ModuleContext) {
-			final ModuleContext modContext = (ModuleContext) functionDef.getContext();
-			// util:eval will stuff non-module function declarations into a module context sometimes,
-			// so watch out for those and ignore them.
-			if (functionDef.getName() != null && 
-					functionDef.getName().getNamespaceURI().equals(modContext.getModuleNamespace()) &&
-                    modContext.getRootContext() != context.getRootContext()) {
-                final ExternalModule rootModule = (ExternalModule) context.getRootModule(functionDef.getName().getNamespaceURI());
-                if (rootModule != null) {
-                    final UserDefinedFunction replacementFunctionDef =
-                        rootModule.getFunction(functionDef.getName(), getArgumentCount(), modContext);
-                    if (replacementFunctionDef != null) {
-                        expression = functionDef = (UserDefinedFunction) replacementFunctionDef.clone();
-                        mySignature = functionDef.getSignature();
-                        functionDef.setCaller(this);
-                    }
-                }
-            }
-        }
     }
         
 	/* (non-Javadoc)
@@ -410,7 +381,7 @@ public class FunctionCall extends Function {
                 expression = new Atomize(context, expression);
             }
 
-            if(Type.subTypeOf(returnType.getPrimaryType(), Type.NUMBER)) {
+            if(Type.subTypeOfUnion(returnType.getPrimaryType(), Type.NUMBER)) {
                 expression = new UntypedValueCheck(context, returnType.getPrimaryType(), expression, new Error(Error.FUNC_RETURN_TYPE));
             } else if(returnType.getPrimaryType() != Type.ITEM) {
                 expression = new DynamicTypeCheck(context, returnType.getPrimaryType(), expression);

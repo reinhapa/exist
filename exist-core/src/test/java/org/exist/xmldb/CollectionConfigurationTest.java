@@ -1,23 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2011 The eXist-db Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software Foundation
- *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- *  $Id: BinaryResourceUpdateTest.java 11148 2010-02-07 14:37:35Z dizzzz $
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xmldb;
 
@@ -26,6 +26,7 @@ import org.junit.*;
 import org.exist.security.Account;
 
 import static org.exist.TestUtils.*;
+import static org.exist.collections.CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -636,7 +637,7 @@ public class CollectionConfigurationTest {
 
         // remove config document thus dropping the configuration
         Collection confCol = DatabaseManager.getCollection("xmldb:exist://" + CONF_COLL_URI.toString(), ADMIN_DB_USER, ADMIN_DB_PWD);
-        Resource confDoc = confCol.getResource("collection.xconf");
+        Resource confDoc = confCol.getResource(DEFAULT_COLLECTION_CONFIG_FILE);
         assertNotNull(confDoc);
         confCol.removeResource(confDoc);
 //            cms = (CollectionManagementService) confCol.getService("CollectionManagementService", "1.0");
@@ -693,7 +694,7 @@ public class CollectionConfigurationTest {
 
         // remove config document thus dropping the configuration
         Collection confCol = DatabaseManager.getCollection("xmldb:exist://" + CONF_COLL_URI.toString(), ADMIN_DB_USER, ADMIN_DB_PWD);
-        Resource confDoc = confCol.getResource("collection.xconf");
+        Resource confDoc = confCol.getResource(DEFAULT_COLLECTION_CONFIG_FILE);
         assertNotNull(confDoc);
         confCol.removeResource(confDoc);
 

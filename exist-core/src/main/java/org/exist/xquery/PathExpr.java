@@ -1,40 +1,38 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2001-2016 The eXist Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *  
- * This program is distributed in the hope that it will be useful,
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery;
-
-import java.io.Writer;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.dom.persistent.DocumentSet;
 import org.exist.dom.persistent.VirtualNodeSet;
 import org.exist.xquery.util.ExpressionDumper;
-import org.exist.xquery.value.Item;
-import org.exist.xquery.value.Sequence;
-import org.exist.xquery.value.SequenceIterator;
-import org.exist.xquery.value.Type;
-import org.exist.xquery.value.ValueSequence;
+import org.exist.xquery.value.*;
 import org.xmldb.api.base.CompiledExpression;
+
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * PathExpr is just a sequence of XQuery/XPath expressions, which will be called
@@ -257,7 +255,7 @@ public class PathExpr extends AbstractExpression implements CompiledXQuery,
                                 Dependency.dependsOn(exprDeps, Dependency.CONTEXT_POSITION)) &&
                                 //A positional predicate will be evaluated one time
                                 //TODO : reconsider since that may be expensive (type evaluation)
-                                !(this instanceof Predicate && Type.subTypeOf(this.returnsType(), Type.NUMBER)) &&
+                                !(this instanceof Predicate && Type.subTypeOfUnion(this.returnsType(), Type.NUMBER)) &&
                                 currentContext != null && !currentContext.isEmpty())) {
                     Sequence exprResult = new ValueSequence(Type.subTypeOf(expr.returnsType(), Type.NODE));
                     ((ValueSequence) exprResult).keepUnOrdered(unordered);
@@ -277,7 +275,15 @@ public class PathExpr extends AbstractExpression implements CompiledXQuery,
                     }
                     result = exprResult;
                 } else {
-                    result = expr.eval(currentContext);
+                    try {
+                        result = expr.eval(currentContext);
+                    } catch (XPathException ex){
+                        // enrich exception when information is available
+                        if (ex.getLine() < 1 || ex.getColumn() < 1) {
+                            ex.setLocation(expr.getLine(), expr.getColumn());
+                        }
+                        throw ex;
+                    }
                 }
                 //TOUNDERSTAND : why did I have to write this test :-) ? -pb
                 //it looks like an empty sequence could be considered as a sub-type of Type.NODE

@@ -1,21 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2015 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.config;
 
@@ -70,7 +72,7 @@ import org.exist.util.ExistSAXParserFactory;
 import org.exist.util.LockException;
 import org.exist.util.MimeType;
 import com.evolvedbinary.j8fu.function.ConsumerE;
-import org.exist.util.io.FastByteArrayOutputStream;
+import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.exist.util.serializer.SAXSerializer;
 import org.exist.xmldb.FullXmldbURI;
 import org.exist.xmldb.XmldbURI;
@@ -744,14 +746,6 @@ public class Configurator {
         }
     }
 
-    public static Configuration parse(final File file) throws ConfigurationException {
-        try {
-            return parse(new FileInputStream(file));
-        } catch (final FileNotFoundException e) {
-            throw new ConfigurationException(e);
-        }
-    }
-
     public static Configuration parse(final InputStream is) throws ConfigurationException {
         try {
             final SAXParserFactory factory = ExistSAXParserFactory.getSAXParserFactory();
@@ -1180,7 +1174,7 @@ public class Configurator {
             if (broker.isReadOnly()) {
                 //database in read-only mode & there no configuration file, 
                 //create in memory document & configuration 
-                try (final FastByteArrayOutputStream os = new FastByteArrayOutputStream();
+                try (final UnsynchronizedByteArrayOutputStream os = new UnsynchronizedByteArrayOutputStream();
                         final Writer writer = new OutputStreamWriter(os)) {
                     final SAXSerializer serializer = new SAXSerializer(writer, null);
                     serializer.startDocument();
@@ -1189,7 +1183,7 @@ public class Configurator {
                     if (os.size() == 0) {
                         return null;
                     }
-                    return parse(os.toFastByteInputStream());
+                    return parse(os.toInputStream());
                     
                 } catch (final IOException | SAXException e) {
                     throw new ConfigurationException(e.getMessage(), e);
@@ -1311,7 +1305,7 @@ public class Configurator {
                 txn.acquireCollectionLock(() -> pool.getLockManager().acquireCollectionWriteLock(collection.getURI()));
                 final IndexInfo info = collection.validateXMLResource(txn, broker, uri, data);
                 final DocumentImpl doc = info.getDocument();
-                doc.getMetadata().setMimeType(MimeType.XML_TYPE.getName());
+                doc.setMimeType(MimeType.XML_TYPE.getName());
                 PermissionFactory.chmod(broker, doc.getPermissions(), Optional.of(Permission.DEFAULT_SYSTEM_RESOURCE_PERM), Optional.empty());
                 fullURI = getFullURI(pool, doc.getURI());
                 saving.add(fullURI);

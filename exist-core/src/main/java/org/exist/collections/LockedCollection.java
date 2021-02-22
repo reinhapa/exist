@@ -1,21 +1,23 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2001-2017 The eXist Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.collections;
 
@@ -109,6 +111,7 @@ public class LockedCollection implements Collection {
         collection.setPath(path, updateChildren);
     }
 
+    @Deprecated
     @Override
     public CollectionMetadata getMetadata() {
         return collection.getMetadata();
@@ -130,14 +133,13 @@ public class LockedCollection implements Collection {
     }
 
     @Override
-    @Deprecated
-    public long getCreationTime() {
-        return collection.getCreationTime();
+    public long getCreated() {
+        return collection.getCreated();
     }
 
     @Override
-    public void setCreationTime(final long timestamp) {
-        collection.setCreationTime(timestamp);
+    public void setCreated(final long timestamp) {
+        collection.setCreated(timestamp);
     }
 
     @Override
@@ -235,11 +237,6 @@ public class LockedCollection implements Collection {
     @Override
     public CollectionEntry getResourceEntry(final DBBroker broker, final String name) throws PermissionDeniedException, LockException, IOException {
         return collection.getResourceEntry(broker, name);
-    }
-
-    @Override
-    public void update(final DBBroker broker, final Collection child) throws PermissionDeniedException, LockException {
-        collection.update(broker, child);
     }
 
     @Override

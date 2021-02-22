@@ -1,19 +1,41 @@
+/*
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
+ *
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 package org.exist.http.urlrewrite;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.exist.Namespaces;
 import org.exist.EXistException;
+import org.exist.Namespaces;
+import org.exist.dom.memtree.SAXAdapter;
+import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.persistent.LockedDocument;
 import org.exist.security.PermissionDeniedException;
-import org.exist.dom.persistent.DocumentImpl;
-import org.exist.util.XMLReaderPool;
-import org.exist.xmldb.XmldbURI;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock.LockMode;
-import org.exist.dom.memtree.SAXAdapter;
-import org.exist.xquery.regex.JDK15RegexTranslator;
-import org.exist.xquery.regex.RegexSyntaxException;
+import org.exist.thirdparty.net.sf.saxon.functions.regex.JDK15RegexTranslator;
+import org.exist.thirdparty.net.sf.saxon.functions.regex.RegexSyntaxException;
+import org.exist.thirdparty.net.sf.saxon.functions.regex.RegularExpression;
+import org.exist.util.XMLReaderPool;
+import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.Constants;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -26,6 +48,7 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.xml.parsers.ParserConfigurationException;
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -150,7 +173,7 @@ public class RewriteConfig {
         if (controllerConfig.startsWith(XmldbURI.XMLDB_URI_PREFIX)) {
 
             try (final DBBroker broker = urlRewrite.getBrokerPool().get(Optional.ofNullable(urlRewrite.getDefaultUser()))) {
-                try (final LockedDocument lockedDocument = broker.getXMLResource(XmldbURI.create(controllerConfig), LockMode.READ_LOCK);) {
+                try (final LockedDocument lockedDocument = broker.getXMLResource(XmldbURI.create(controllerConfig), LockMode.READ_LOCK)) {
                     final DocumentImpl doc = lockedDocument == null ? null : lockedDocument.getDocument();
                     if (doc != null) {
                         parse(doc);
@@ -220,7 +243,7 @@ public class RewriteConfig {
     }
 
     private Document parseConfig(final Path file) throws ParserConfigurationException, SAXException, IOException {
-        try (final InputStream is = Files.newInputStream(file)) {
+        try (final InputStream is = new BufferedInputStream(Files.newInputStream(file))) {
             final InputSource src = new InputSource(is);
             final XMLReaderPool parserPool = urlRewrite.getBrokerPool().getParserPool();
             XMLReader xr = null;
@@ -249,11 +272,11 @@ public class RewriteConfig {
 
         private Mapping(String regex, final URLRewrite action) throws ServletException {
             try {
-                final int xmlVersion = 11;
-                final boolean ignoreWhitespace = false;
-                final boolean caseBlind = false;
+                final int options = RegularExpression.XML11 | RegularExpression.XPATH30;
+                int flagbits = 0;
 
-                regex = JDK15RegexTranslator.translate(regex, xmlVersion, true, ignoreWhitespace, caseBlind);
+                final List<RegexSyntaxException> warnings = new ArrayList<>();
+                regex = JDK15RegexTranslator.translate(regex, options, flagbits, warnings);
 
                 this.pattern = Pattern.compile(regex, 0);
                 this.action = action;

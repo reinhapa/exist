@@ -1,28 +1,40 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2001-2017 The eXist Project
- * http://exist-db.org
+ * Copyright (C) 2014, Evolved Binary Ltd
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * This file was originally ported from FusionDB to eXist-db by
+ * Evolved Binary, for the benefit of the eXist-db Open Source community.
+ * Only the ported code as it appears in this file, at the time that
+ * it was contributed to eXist-db, was re-licensed under The GNU
+ * Lesser General Public License v2.1 only for use in eXist-db.
  *
- * This program is distributed in the hope that it will be useful,
+ * This license grant applies only to a snapshot of the code as it
+ * appeared when ported, it does not offer or infer any rights to either
+ * updates of this source code or access to the original source code.
+ *
+ * The GNU Lesser General Public License v2.1 only license follows.
+ *
+ * ---------------------------------------------------------------------
+ *
+ * Copyright (C) 2014, Evolved Binary Ltd
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.storage;
 
 import java.text.NumberFormat;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.concurrent.TimeUnit;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -44,9 +56,6 @@ import org.exist.xquery.*;
  *
  * For each XQuery, a maximum of {@link #DEFAULT_MAX_QUERY_STACK_SIZE} compiled
  * expressions are kept in the pool.
- * An XQuery expression will be removed from the pool if it has not been
- * used for a pre-defined timeout (default is {@link #DEFAULT_TIMEOUT}); these
- * settings can be configured in conf.xml.
  *
  * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
@@ -58,19 +67,15 @@ public class XQueryPool implements BrokerPoolService {
     public static final String CONFIGURATION_ELEMENT_NAME = "query-pool";
     public static final String MAX_STACK_SIZE_ATTRIBUTE = "max-stack-size";
     public static final String POOL_SIZE_ATTTRIBUTE = "size";
-    public static final String TIMEOUT_ATTRIBUTE = "timeout";
 
     public static final String PROPERTY_MAX_STACK_SIZE = "db-connection.query-pool.max-stack-size";
     public static final String PROPERTY_POOL_SIZE = "db-connection.query-pool.size";
-    public static final String PROPERTY_TIMEOUT = "db-connection.query-pool.timeout";
 
     private static final int DEFAULT_MAX_POOL_SIZE = 128;
     private static final int DEFAULT_MAX_QUERY_STACK_SIZE = 64;
-    private static final long DEFAULT_TIMEOUT = 120_000L;   // ms (i.e. 2 mins)
 
     private int maxPoolSize = DEFAULT_MAX_POOL_SIZE;
     private int maxQueryStackSize = DEFAULT_MAX_QUERY_STACK_SIZE;
-    private long timeout = DEFAULT_TIMEOUT;
 
     /**
      * Source -> Deque of compiled Queries
@@ -81,7 +86,6 @@ public class XQueryPool implements BrokerPoolService {
     public void configure(final Configuration configuration) {
         final Integer maxStSz = (Integer) configuration.getProperty(PROPERTY_MAX_STACK_SIZE);
         final Integer maxPoolSz = (Integer) configuration.getProperty(PROPERTY_POOL_SIZE);
-        final Long t = (Long) configuration.getProperty(PROPERTY_TIMEOUT);
         final NumberFormat nf = NumberFormat.getNumberInstance();
 
         if (maxPoolSz != null) {
@@ -96,20 +100,12 @@ public class XQueryPool implements BrokerPoolService {
             this.maxQueryStackSize = DEFAULT_MAX_QUERY_STACK_SIZE;
         }
 
-        if (t != null) {
-            this.timeout = t;
-        } else {
-            this.timeout = DEFAULT_TIMEOUT;
-        }
-
         this.cache = Caffeine.newBuilder()
                 .maximumSize(maxPoolSize)
-                .expireAfterAccess(timeout, TimeUnit.MILLISECONDS)
                 .build();
 
         LOG.info("QueryPool: " + "size = " + nf.format(maxPoolSize) + "; "
-                + "maxQueryStackSize = " + nf.format(maxQueryStackSize) + "; "
-                + "timeout = " + nf.format(timeout) + "; ");
+                + "maxQueryStackSize = " + nf.format(maxQueryStackSize));
     }
 
     /**
@@ -168,7 +164,7 @@ public class XQueryPool implements BrokerPoolService {
 
             if (!isCompiledQueryValid(broker, source, firstCompiledXQuery)) {
                 if (LOG.isDebugEnabled()) {
-                    LOG.debug(source.getKey() + " is invalid, removing from XQuery Pool...");
+                    LOG.debug(source.pathOrShortIdentifier() + " is invalid, removing from XQuery Pool...");
                 }
 
                 // query is invalid, returning null will remove the entry from the cache
@@ -215,11 +211,7 @@ public class XQueryPool implements BrokerPoolService {
 
         // the compiled query is no longer valid if one of the imported
         // modules may have changed
-        if (!compiledXQuery.isValid()) {
-            return false;
-        }
-
-        return true;
+        return compiledXQuery.isValid();
     }
 
     /**

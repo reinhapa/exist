@@ -1,21 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2015 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery;
 
@@ -29,6 +31,8 @@ import org.exist.xquery.value.AtomicValue;
 import org.exist.xquery.value.Type;
 
 import java.util.*;
+
+import static org.apache.commons.lang3.ArrayUtils.isNotEmpty;
 
 /**
  * Analyzes the query and marks optimizable expressions for the query engine.
@@ -292,25 +296,32 @@ public class Optimizer extends DefaultExpressionVisitor {
      * @param ref the variable reference
      */
     @Override
-    public void visitVariableReference(VariableReference ref) {
+    public void visitVariableReference(final VariableReference ref) {
         final String ns = ref.getName().getNamespaceURI();
         if (ns != null && ns.length() > 0) {
-            final Module module = context.getModule(ns);
-            if (module != null && !module.isInternalModule()) {
-                final Collection<VariableDeclaration> vars = ((ExternalModule) module).getVariableDeclarations();
-                for (VariableDeclaration var: vars) {
-                    if (var.getName().equals(ref.getName()) && var.getExpression().isPresent()) {
-                        var.getExpression().get().accept(this);
-                        final Expression expression = simplifyPath(var.getExpression().get());
-                        final InlineableVisitor visitor = new InlineableVisitor();
-                        expression.accept(visitor);
-                        if (visitor.isInlineable()) {
-                            final Expression parent = ref.getParent();
-                            if (parent instanceof RewritableExpression) {
-//                                System.out.println(ref.getSource().toString() + " line " + ref.getLine() + ": " +
-//                                        "inlining " +
-//                                        "variable "+ ref.getName());
-                                ((RewritableExpression) parent).replace(ref, expression);
+
+            final Module[] modules = context.getModules(ns);
+            if (isNotEmpty(modules)) {
+                for (final Module module : modules) {
+                    if (module != null && !module.isInternalModule()) {
+                        final Collection<VariableDeclaration> vars = ((ExternalModule) module).getVariableDeclarations();
+                        for (final VariableDeclaration var: vars) {
+                            if (var.getName().equals(ref.getName()) && var.getExpression().isPresent()) {
+                                var.getExpression().get().accept(this);
+                                final Expression expression = simplifyPath(var.getExpression().get());
+                                final InlineableVisitor visitor = new InlineableVisitor();
+                                expression.accept(visitor);
+                                if (visitor.isInlineable()) {
+                                    final Expression parent = ref.getParent();
+                                    if (parent instanceof RewritableExpression) {
+                                        if (LOG.isDebugEnabled()) {
+                                            LOG.debug(ref.getSource().toString() + " line " + ref.getLine() + ": inlining variable "+ ref.getName());
+                                        }
+                                        ((RewritableExpression) parent).replace(ref, expression);
+                                    }
+                                }
+
+                                return;  // exit function!
                             }
                         }
                     }

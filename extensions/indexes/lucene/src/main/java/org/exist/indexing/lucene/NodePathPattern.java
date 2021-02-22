@@ -1,32 +1,29 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2001-2018 The eXist Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.indexing.lucene;
-
-//import org.apache.logging.log4j.LogManager;
-//import org.apache.logging.log4j.Logger;
 
 import org.exist.dom.QName;
 import org.exist.storage.NodePath;
 import org.exist.storage.NodePath2;
-import org.exist.util.FastStringBuffer;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -41,7 +38,7 @@ import java.util.Objects;
  * Most notably this mis-design was employed in LuceneConfig and LuceneIndexConfig.
  *
  * This is required in order to implement the feature requested/discussed here:
- * @see <a href="https://sourceforge.net/p/exist/mailman/message/36392026/">[Exist-open] Are more elaborate xpath expressions allowed in Lucene's index config &lt;text match='...'/&gt;</a>
+ * see <a href="https://sourceforge.net/p/exist/mailman/message/36392026/">[Exist-open] Are more elaborate xpath expressions allowed in Lucene's index config...</a>
  *
  * After class NodePath2 was introduced and replaced NodePath in all cases related to Lucene index
  * element walking and matching, now all that is left in order to have the desired feature implemented
@@ -84,8 +81,9 @@ public class NodePathPattern {
         }
 
         @Override
-        public boolean evaluate(NodePath2 nodePath, int elementIdx) {
-            String val = nodePath.attribs(elementIdx).get(attrName);
+        public boolean evaluate(final NodePath2 nodePath, final int elementIdx) {
+            final Map<String, String> attrs = nodePath.attribs(elementIdx);
+            final String val = attrs == null ? null : attrs.get(attrName);
             switch (pcode) {
                 case EQUALS: // =
                 case EQ: // eq
@@ -97,7 +95,6 @@ public class NodePathPattern {
                     // actual attr val may be null (i.e. not present) or present but different:
                     return !Objects.equals(val, attrVal);
                 default:
-                    assert false;
                     throw new IllegalArgumentException("PredicateCode " + pcode + " not handled!");
             }
         }
@@ -127,7 +124,7 @@ public class NodePathPattern {
     }
 
     private void parseXPathExpression(final Map<String, String> namespaces, final String matchPattern) {
-        final FastStringBuffer token = new FastStringBuffer(matchPattern.length());
+        final StringBuilder token = new StringBuilder(matchPattern.length());
         int pos = 0;
         while (pos < matchPattern.length()) {
             final char ch = matchPattern.charAt(pos);
@@ -135,7 +132,7 @@ public class NodePathPattern {
                 case '/':
                     final String next = token.toString();
                     token.setLength(0);
-                    if (next.length() > 0) {
+                    if (!next.isEmpty()) {
                         addSegment(namespaces, next);
                     }
                     if (matchPattern.charAt(++pos) == '/') {

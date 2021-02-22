@@ -1,24 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-09 Wolfgang M. Meier
- *  wolfgang@exist-db.org
- *  http://exist.sourceforge.net
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- *  $Id$
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery.functions.session;
 
@@ -33,7 +32,7 @@ import org.exist.xquery.value.Type;
 import javax.annotation.Nonnull;
 
 /**
- * @author Adam Retter (adam.retter@devon.gov.uk)
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  * @author Loren Cahlander
  */
 public class RemoveAttribute extends StrictSessionFunction {
@@ -52,10 +51,13 @@ public class RemoveAttribute extends StrictSessionFunction {
     }
 
     @Override
-    public Sequence eval(final Sequence[] args, @Nonnull final SessionWrapper session)
-            throws XPathException {
-        final String attrib = args[0].getStringValue();
-        session.removeAttribute(attrib);
-        return Sequence.EMPTY_SEQUENCE;
+    public Sequence eval(final Sequence[] args, @Nonnull final SessionWrapper session) throws XPathException {
+
+        final String name = args[0].getStringValue();
+
+        return withValidSession(session, s -> {
+            s.removeAttribute(name);
+            return Sequence.EMPTY_SEQUENCE;
+        }).orElse(Sequence.EMPTY_SEQUENCE);
     }
 }

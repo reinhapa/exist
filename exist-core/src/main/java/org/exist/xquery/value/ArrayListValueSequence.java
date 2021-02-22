@@ -1,21 +1,34 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2001-2020 The eXist-db Project
- * http://exist-db.org
+ * Copyright (C) 2014, Evolved Binary Ltd
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * This file was originally ported from FusionDB to eXist-db by
+ * Evolved Binary, for the benefit of the eXist-db Open Source community.
+ * Only the ported code as it appears in this file, at the time that
+ * it was contributed to eXist-db, was re-licensed under The GNU
+ * Lesser General Public License v2.1 only for use in eXist-db.
  *
- * This program is distributed in the hope that it will be useful,
+ * This license grant applies only to a snapshot of the code as it
+ * appeared when ported, it does not offer or infer any rights to either
+ * updates of this source code or access to the original source code.
+ *
+ * The GNU Lesser General Public License v2.1 only license follows.
+ *
+ * ---------------------------------------------------------------------
+ *
+ * Copyright (C) 2014, Evolved Binary Ltd
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery.value;
 
@@ -174,7 +187,7 @@ public class ArrayListValueSequence extends AbstractSequence implements MemoryNo
                 LOG.warn("Iterator == null: {}", otherSequence.getClass().getName());
                 return;
             }
-            for (; iterator.hasNext(); ) {
+            while (iterator.hasNext()) {
                 add(iterator.nextItem());
             }
         }
@@ -237,6 +250,8 @@ public class ArrayListValueSequence extends AbstractSequence implements MemoryNo
         final List<Item> newValues = new ArrayList<>(values.size());
         int newType = Type.ANY_TYPE;
 
+        final ItemComparator itemComparator = new ItemComparator();
+
         for (int i = 0; i < values.size(); i++) {
             final Item value = values.get(i);
             boolean foundDuplicate = false;
@@ -246,7 +261,7 @@ public class ArrayListValueSequence extends AbstractSequence implements MemoryNo
                 for (int j = i + 1; j < values.size(); j++) {
                     final Item otherValue = values.get(j);
                     if (Type.subTypeOf(otherValue.getType(), Type.NODE)) {
-                        if (ItemComparator.INSTANCE.compare(value, otherValue) == 0) {
+                        if (itemComparator.compare(value, otherValue) == 0) {
                             foundDuplicate = true;
                             break;  // exit j loop
                         }

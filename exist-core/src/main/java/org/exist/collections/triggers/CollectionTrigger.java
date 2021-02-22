@@ -1,21 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.collections.triggers;
 
@@ -40,7 +42,7 @@ public interface CollectionTrigger extends Trigger {
      * @param uri of the collection the trigger listens on
      * @throws TriggerException if an error in the trigger function is thrown
      */
-    public void beforeCreateCollection(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException;
+    void beforeCreateCollection(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException;
     
     /**
      * This method is called after the operation has completed.
@@ -50,14 +52,14 @@ public interface CollectionTrigger extends Trigger {
      * @param collection the trigger listens on
      * @throws TriggerException if an error in the trigger function is thrown
      */
-    public void afterCreateCollection(DBBroker broker, Txn txn, Collection collection) throws TriggerException;
+    void afterCreateCollection(DBBroker broker, Txn txn, Collection collection) throws TriggerException;
 
-    public void beforeCopyCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI newUri) throws TriggerException;
-    public void afterCopyCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI oldUri) throws TriggerException;
+    void beforeCopyCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI newUri) throws TriggerException;
+    void afterCopyCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI oldUri) throws TriggerException;
 
-    public void beforeMoveCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI newUri) throws TriggerException;
-    public void afterMoveCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI oldUri) throws TriggerException;
+    void beforeMoveCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI newUri) throws TriggerException;
+    void afterMoveCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI oldUri) throws TriggerException;
 
-    public void beforeDeleteCollection(DBBroker broker, Txn txn, Collection collection) throws TriggerException;
-    public void afterDeleteCollection(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException;
+    void beforeDeleteCollection(DBBroker broker, Txn txn, Collection collection) throws TriggerException;
+    void afterDeleteCollection(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException;
 }

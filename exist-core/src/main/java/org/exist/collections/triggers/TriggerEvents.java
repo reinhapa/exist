@@ -1,23 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2010-2012 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- *  $Id$
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.collections.triggers;
 
@@ -83,7 +83,7 @@ public class TriggerEvents {
 		DELETE_DOCUMENT
 	}
 
-	private final static String EVENTS_STRING []  = {
+	private final static String[] EVENTS_STRING = {
 		"CREATE-COLLECTION",
 		"UPDATE-COLLECTION",
 		"COPY-COLLECTION",
@@ -97,7 +97,7 @@ public class TriggerEvents {
 		"DELETE-DOCUMENT"
 	};
 
-	private final static EVENTS _EVENTS_ []  = {
+	private final static EVENTS[] _EVENTS_ = {
 		EVENTS.CREATE_COLLECTION,
 		EVENTS.UPDATE_COLLECTION,
 		EVENTS.COPY_COLLECTION,
@@ -138,7 +138,7 @@ public class TriggerEvents {
 	    return result;
 	}
 
-	public final static String OLD_EVENTS_STRING []  = {
+	public final static String[] OLD_EVENTS_STRING = {
 		"STORE",
 		"UPDATE",
 		"REMOVE",

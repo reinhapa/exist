@@ -1,23 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2011 The eXist-db project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software Foundation
- *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- *  $Id$
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.backup;
 
@@ -37,10 +37,7 @@ import org.exist.xquery.value.DateTimeValue;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 import org.xmldb.api.DatabaseManager;
-import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.Database;
-import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.XMLDBException;
+import org.xmldb.api.base.*;
 import org.xmldb.api.modules.XMLResource;
 
 import javax.annotation.Nullable;
@@ -143,55 +140,6 @@ public class Backup {
     }
 
 
-    public static String decode(final String enco) {
-        final StringBuilder out = new StringBuilder();
-        String temp = "";
-        char t;
-
-        for (int y = 0; y < enco.length(); y++) {
-            t = enco.charAt(y);
-
-            if (t != '&') {
-                out.append(t);
-            } else {
-                temp = enco.substring(y, y + 4);
-
-                switch (temp) {
-                    case "&22;":
-                        out.append('"');
-                        break;
-                    case "&26;":
-                        out.append('&');
-                        break;
-                    case "&2A;":
-                        out.append('*');
-                        break;
-                    case "&3A;":
-                        out.append(':');
-                        break;
-                    case "&3C;":
-                        out.append('<');
-                        break;
-                    case "&3E;":
-                        out.append(">");
-                        break;
-                    case "&3F;":
-                        out.append('?');
-                        break;
-                    case "&5C;":
-                        out.append('\\');
-                        break;
-                    case "&7C;":
-                        out.append('|');
-                        break;
-                    default:
-                        break;
-                }
-                y = y + 3;
-            }
-        }
-        return (out.toString());
-    }
 
     public static void main(final String[] args) {
         try {
@@ -216,7 +164,7 @@ public class Backup {
             attr.addAttribute(Namespaces.EXIST_NS, "owner", "owner", "CDATA", permission.getOwner().getName());
             attr.addAttribute(Namespaces.EXIST_NS, "group", "group", "CDATA", permission.getGroup().getName());
             attr.addAttribute(Namespaces.EXIST_NS, "mode", "mode", "CDATA", Integer.toOctalString(permission.getMode()));
-        } catch (final Exception e) {
+        } catch (final Exception ignored) {
 
         }
     }
@@ -269,7 +217,7 @@ public class Backup {
 
                         try {
                             wait(20);
-                        } catch (final InterruptedException e) {
+                        } catch (final InterruptedException ignored) {
                         }
                     }
                 }
@@ -371,11 +319,33 @@ public class Backup {
                     //Skipping resources[i]
                     continue;
                 }
+
                 resource = current.getResource(resources[i]);
 
                 if (dialog != null) {
                     dialog.setResource(resources[i]);
                     dialog.setProgress(i);
+                }
+
+                // Avoid NPE
+                if (resource == null) {
+                    final String msg = "Resource " + resources[i] + " could not be found.";
+
+                    if(dialog != null) {
+                        Object[] options = {"Ignore", "Abort"};
+                        int n = JOptionPane.showOptionDialog(null, msg, "Backup Error",
+                                JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null,
+                                options, options[1]);
+                        if (n == JOptionPane.YES_OPTION) {
+                            // ignore one
+                            continue;
+                        }
+
+                        // Abort
+                        dialog.dispose();
+                        JOptionPane.showMessageDialog(null, "Backup aborted.", "Abort", JOptionPane.WARNING_MESSAGE);
+                    }
+                    throw new XMLDBException(ErrorCodes.INVALID_RESOURCE, msg);
                 }
 
                 final String name = resources[i];

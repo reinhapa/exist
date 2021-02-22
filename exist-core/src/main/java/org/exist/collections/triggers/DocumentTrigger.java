@@ -1,21 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2015 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.collections.triggers;
 
@@ -82,7 +84,7 @@ public interface DocumentTrigger extends Trigger {
      * @param uri the uri
      * @throws TriggerException in case of an error
      */
-    public void beforeCreateDocument(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException;
+    void beforeCreateDocument(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException;
     
     /**
      * This method is called after the operation completed. At this point, the document has already
@@ -93,22 +95,22 @@ public interface DocumentTrigger extends Trigger {
      * @param document stored document
      * @throws TriggerException in case of an error
      */
-    public void afterCreateDocument(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException;
+    void afterCreateDocument(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException;
 
-    public void beforeUpdateDocument(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException;
-    public void afterUpdateDocument(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException;
+    void beforeUpdateDocument(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException;
+    void afterUpdateDocument(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException;
 
-    public void beforeUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException;
-    public void afterUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException;
+    void beforeUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException;
+    void afterUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException;
 
-    public void beforeCopyDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI newUri) throws TriggerException;
-    public void afterCopyDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI oldUri) throws TriggerException;
+    void beforeCopyDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI newUri) throws TriggerException;
+    void afterCopyDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI oldUri) throws TriggerException;
 
-    public void beforeMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI newUri) throws TriggerException;
-    public void afterMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI oldUri) throws TriggerException;
+    void beforeMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI newUri) throws TriggerException;
+    void afterMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI oldUri) throws TriggerException;
 
-    public void beforeDeleteDocument(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException;
-    public void afterDeleteDocument(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException;
+    void beforeDeleteDocument(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException;
+    void afterDeleteDocument(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException;
 
     /**
      * Returns true if the SAX parser is currently in validation phase. During validation phase, the trigger
@@ -117,12 +119,12 @@ public interface DocumentTrigger extends Trigger {
      * 
      * @return true if the parser is in validation phase.
      */
-    public boolean isValidating();
+    boolean isValidating();
 
     /**
      * Called by the database to report that it is entering validation phase.
      * 
      * @param validating enable or disable validation
      */
-    public void setValidating(boolean validating);
+    void setValidating(boolean validating);
 }

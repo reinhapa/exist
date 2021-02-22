@@ -1,28 +1,30 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2003-2016 The eXist-db Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.storage;
 
 import com.evolvedbinary.j8fu.fsm.AtomicFSM;
 import com.evolvedbinary.j8fu.fsm.FSM;
+import com.evolvedbinary.j8fu.lazy.AtomicLazyVal;
 import net.jcip.annotations.GuardedBy;
-import net.jcip.annotations.NotThreadSafe;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -150,7 +152,8 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
      * State of the BrokerPool instance
      */
     private enum State {
-        SHUTTING_DOWN,
+        SHUTTING_DOWN_MULTI_USER_MODE,
+        SHUTTING_DOWN_SYSTEM_MODE,
         SHUTDOWN,
         INITIALIZING,
         INITIALIZING_SYSTEM_MODE,
@@ -163,7 +166,9 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
         INITIALIZE_SYSTEM_MODE,
         INITIALIZE_MULTI_USER_MODE,
         READY,
-        START_SHUTDOWN,
+
+        START_SHUTDOWN_MULTI_USER_MODE,
+        START_SHUTDOWN_SYSTEM_MODE,
         FINISHED_SHUTDOWN,
     }
 
@@ -174,8 +179,9 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
                     .when(State.INITIALIZING).on(Event.INITIALIZE_SYSTEM_MODE).switchTo(State.INITIALIZING_SYSTEM_MODE)
                     .when(State.INITIALIZING_SYSTEM_MODE).on(Event.INITIALIZE_MULTI_USER_MODE).switchTo(State.INITIALIZING_MULTI_USER_MODE)
                     .when(State.INITIALIZING_MULTI_USER_MODE).on(Event.READY).switchTo(State.OPERATIONAL)
-                    .when(State.OPERATIONAL).on(Event.START_SHUTDOWN).switchTo(State.SHUTTING_DOWN)
-                    .when(State.SHUTTING_DOWN).on(Event.FINISHED_SHUTDOWN).switchTo(State.SHUTDOWN)
+                    .when(State.OPERATIONAL).on(Event.START_SHUTDOWN_MULTI_USER_MODE).switchTo(State.SHUTTING_DOWN_MULTI_USER_MODE)
+                    .when(State.SHUTTING_DOWN_MULTI_USER_MODE).on(Event.START_SHUTDOWN_SYSTEM_MODE).switchTo(State.SHUTTING_DOWN_SYSTEM_MODE)
+                    .when(State.SHUTTING_DOWN_SYSTEM_MODE).on(Event.FINISHED_SHUTDOWN).switchTo(State.SHUTDOWN)
             .build()
     );
 
@@ -377,6 +383,13 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
     private StartupTriggersManager startupTriggersManager;
 
     /**
+     * Configuration for Saxon.
+     *
+     * One instance per-database, lazily initialised.
+     */
+    private AtomicLazyVal<net.sf.saxon.Configuration> saxonConfig = new AtomicLazyVal<>(net.sf.saxon.Configuration::newConfiguration);
+
+    /**
      * Creates and configures the database instance.
      *
      * @param instanceName A name for the database instance.
@@ -485,9 +498,7 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
         this.notificationService = servicesManager.register(new NotificationService());
 
         this.journalManager = recoveryEnabled ? Optional.of(new JournalManager()) : Optional.empty();
-        if(journalManager.isPresent()) {
-                servicesManager.register(journalManager.get());
-        }
+        journalManager.ifPresent(servicesManager::register);
 
         final SystemTaskManager systemTaskManager = servicesManager.register(new SystemTaskManager(this));
         this.transactionManager = servicesManager.register(new TransactionManager(this, journalManager, systemTaskManager));
@@ -497,9 +508,7 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
         this.symbols = servicesManager.register(new SymbolTable());
 
         this.expathRepo = Optional.ofNullable(new ExistRepository());
-        if(expathRepo.isPresent()) {
-            servicesManager.register(expathRepo.get());
-        }
+        expathRepo.ifPresent(servicesManager::register);
         servicesManager.register(new ClasspathHelper());
 
         this.indexManager = servicesManager.register(new IndexManager(this));
@@ -511,6 +520,12 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
         this.collectionConfigurationManager = servicesManager.register(new CollectionConfigurationManager(this));
 
         this.startupTriggersManager = servicesManager.register(new StartupTriggersManager());
+
+        // this is just used for unit tests
+        final BrokerPoolService testBrokerPoolService = (BrokerPoolService) conf.getProperty("exist.testBrokerPoolService");
+        if (testBrokerPoolService != null) {
+            servicesManager.register(testBrokerPoolService);
+        }
 
         //configure the registered services
         try {
@@ -562,6 +577,13 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
 
                         if(isReadOnly()) {
                             journalManager.ifPresent(JournalManager::disableJournalling);
+                        }
+
+                        try(final Txn transaction = transactionManager.beginTransaction()) {
+                            servicesManager.startPreSystemServices(systemBroker, transaction);
+                            transaction.commit();
+                        } catch(final BrokerPoolServiceException e) {
+                            throw new EXistException(e);
                         }
 
                         //Run the recovery process
@@ -1449,9 +1471,7 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
          *            made by some transaction T, it is necessary that the update record
          *            <T,X,v,w> appear on disk.
          */
-        if(journalManager.isPresent()) {
-            journalManager.get().flush(true, true);
-        }
+        journalManager.ifPresent(manager -> manager.flush(true, true));
 
         // sync various DBX files
         broker.sync(syncEvent);
@@ -1490,50 +1510,6 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
     }
 
     /**
-     * Schedules a cache synchronization for the database instance. If the database instance is idle,
-     * the cache synchronization will be run immediately. Otherwise, the task will be deferred
-     * until all running threads have returned.
-     *
-     * @param syncEvent One of {@link org.exist.storage.sync.Sync}
-     */
-    public void triggerSync(final Sync syncEvent) {
-        //TOUNDERSTAND (pb) : synchronized, so... "schedules" or, rather, "executes" ? "schedules" (WM)
-        final State s = status.getCurrentState();
-        if(s == State.SHUTDOWN || s == State.SHUTTING_DOWN) {
-            return;
-        }
-
-        LOG.debug("Triggering sync: " + syncEvent);
-        synchronized(this) {
-            //Are there available brokers ?
-            // TOUNDERSTAND (pb) : the trigger is ignored !
-            // WM: yes, it seems wrong!!
-//			if(inactiveBrokers.size() == 0)
-//				return;
-            //TODO : switch on syncEvent and throw an exception if it is inaccurate ?
-            //Is the database instance idle ?
-            if(inactiveBrokers.size() == brokersCount) {
-                //Borrow a broker
-                //TODO : this broker is *not* marked as active and may be reused by another process !
-                // No other brokers are running at this time, so there's no risk.
-                //TODO : use get() then release the broker ?
-                // No, might lead to a deadlock.
-                final DBBroker broker = inactiveBrokers.pop();
-                broker.prepare();
-                //Do the synchronization job
-                sync(broker, syncEvent);
-                inactiveBrokers.push(broker);
-                syncRequired = false;
-            } else {
-                //Put the synchronization job into the queue
-                //TODO : check that we don't replace high priority Sync.MAJOR_SYNC by a lesser priority sync !
-                this.syncEvent = syncEvent;
-                syncRequired = true;
-            }
-        }
-    }
-
-    /**
      * Schedules a system maintenance task for the database instance. If the database is idle,
      * the task will be run immediately. Otherwise, the task will be deferred
      * until all running threads have returned.
@@ -1543,7 +1519,7 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
     //TOUNDERSTAND (pb) : synchronized, so... "schedules" or, rather, "executes" ?
     public void triggerSystemTask(final SystemTask task) {
         final State s = status.getCurrentState();
-        if(s == State.SHUTTING_DOWN) {
+        if(s == State.SHUTTING_DOWN_MULTI_USER_MODE || s == State.SHUTTING_DOWN_SYSTEM_MODE) {
             LOG.info("Skipping SystemTask: '" + task.getName() + "' as database is shutting down...");
             return;
         } else if(s == State.SHUTDOWN) {
@@ -1561,10 +1537,37 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
         shutdown(false);
     }
 
+    /**
+     * Returns true if the BrokerPool is in the
+     * process of shutting down.
+     *
+     * @return true if the BrokerPool is shutting down.
+     */
     public boolean isShuttingDown() {
-        return status.getCurrentState() == State.SHUTTING_DOWN;
+        final State s = status.getCurrentState();
+        return s == State.SHUTTING_DOWN_MULTI_USER_MODE
+                || s == State.SHUTTING_DOWN_SYSTEM_MODE;
     }
 
+    /**
+     * Returns true if the BrokerPool is either in the
+     * process of shutting down, or has already shutdown.
+     *
+     * @return true if the BrokerPool is shutting down or
+     *     has shutdown.
+     */
+    public boolean isShuttingDownOrDown() {
+        final State s = status.getCurrentState();
+        return s == State.SHUTTING_DOWN_MULTI_USER_MODE
+                || s == State.SHUTTING_DOWN_SYSTEM_MODE
+                || s == State.SHUTDOWN;
+    }
+
+    /**
+     * Returns true of the BrokerPool is shutdown.
+     *
+     * @return true if the BrokerPool is shutdown.
+     */
     public boolean isShutDown() {
         return status.getCurrentState() == State.SHUTDOWN;
     }
@@ -1581,9 +1584,27 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
     void shutdown(final boolean killed, final Consumer<String> shutdownInstanceConsumer) {
 
         try {
-            status.process(Event.START_SHUTDOWN);
+            status.process(Event.START_SHUTDOWN_MULTI_USER_MODE);
         } catch(final IllegalStateException e) {
             // we are not operational!
+            LOG.warn(e);
+            return;
+        }
+
+        // notify any BrokerPoolServices that we are about to shutdown
+        try {
+            // instruct database services that we are about to stop multi-user mode
+            servicesManager.stopMultiUserServices(this);
+        } catch(final BrokerPoolServicesManagerException e) {
+            for(final BrokerPoolServiceException bpse : e.getServiceExceptions()) {
+                LOG.error(bpse.getMessage(), bpse);
+            }
+        }
+
+        try {
+            status.process(Event.START_SHUTDOWN_SYSTEM_MODE);
+        } catch(final IllegalStateException e) {
+            // we are not in SHUTTING_DOWN_MULTI_USER_MODE!
             LOG.warn(e);
             return;
         }
@@ -1666,7 +1687,7 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
 
                         try {
                             // instruct all database services to stop
-                            servicesManager.stopServices(broker);
+                            servicesManager.stopSystemServices(broker);
                         } catch(final BrokerPoolServicesManagerException e) {
                            for(final BrokerPoolServiceException bpse : e.getServiceExceptions()) {
                                LOG.error(bpse.getMessage(), bpse);
@@ -1918,6 +1939,10 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
 
     public PluginsManager getPluginsManager() {
         return pluginManager;
+    }
+
+    public net.sf.saxon.Configuration getSaxonConfiguration() {
+        return saxonConfig.get();
     }
 
     /**

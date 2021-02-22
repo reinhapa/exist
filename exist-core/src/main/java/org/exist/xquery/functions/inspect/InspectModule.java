@@ -1,3 +1,24 @@
+/*
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
+ *
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 package org.exist.xquery.functions.inspect;
 
 import org.exist.dom.QName;
@@ -51,16 +72,19 @@ public class InspectModule extends BasicFunction {
 
         final XQueryContext tempContext = new XQueryContext(context.getBroker().getBrokerPool());
         tempContext.setModuleLoadPath(context.getModuleLoadPath());
-        final Module module;
+        final Module[] modules;
         if (isCalledAs("inspect-module")) {
-            module = tempContext.importModule(null, null, args[0].getStringValue());
+            modules = tempContext.importModule(null, null, new AnyURIValue[] { (AnyURIValue) args[0].itemAt(0) });
         } else {
-            module = tempContext.importModule(args[0].getStringValue(), null, null);
+            modules = tempContext.importModule(args[0].getStringValue(), null, null);
         }
 
-        if (module == null) {
+        if (modules == null || modules.length == 0) {
             return Sequence.EMPTY_SEQUENCE;
         }
+
+        // this function only supports working with a singular module for a namespace!
+        final Module module = modules[0];
 
         try {
             context.pushDocumentContext();

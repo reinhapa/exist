@@ -1,23 +1,24 @@
-/* eXist Open Source Native XML Database
- * Copyright (C) 2000-03,  Wolfgang M. Meier (meier@ifs.tu-darmstadt.de)
+/*
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
+ *
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
  * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Library General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Library General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- * 
- * $Id$
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.xquery;
 
 import java.util.HashMap;
@@ -55,7 +56,7 @@ public class OpNumeric extends BinaryOp {
         this.operator = operator;
         int ltype = left.returnsType();
         int rtype = right.returnsType();
-        if (Type.subTypeOf(ltype, Type.NUMBER) && Type.subTypeOf(rtype, Type.NUMBER)) {
+        if (Type.subTypeOfUnion(ltype, Type.NUMBER) && Type.subTypeOfUnion(rtype, Type.NUMBER)) {
             if (ltype > rtype) {
                 right = new UntypedValueCheck(context, ltype, right);
             } else if (rtype > ltype) {
@@ -69,8 +70,8 @@ public class OpNumeric extends BinaryOp {
                 returnType = Math.max(ltype, rtype);
             }
         } else {
-            if (Type.subTypeOf(ltype, Type.NUMBER)) {ltype = Type.NUMBER;}
-            if (Type.subTypeOf(rtype, Type.NUMBER)) {rtype = Type.NUMBER;}
+            if (Type.subTypeOfUnion(ltype, Type.NUMBER)) {ltype = Type.NUMBER;}
+            if (Type.subTypeOfUnion(rtype, Type.NUMBER)) {rtype = Type.NUMBER;}
             final OpEntry entry = OP_TYPES.get(new OpEntry(operator, ltype, rtype));
             if (entry != null) {
                 returnType = entry.typeResult;
@@ -141,10 +142,10 @@ public class OpNumeric extends BinaryOp {
                         operator.symbol);}
                 //TODO : move to implementations
                 if (operator == ArithmeticOperator.DIVISION_INTEGER) {
-                    if (!Type.subTypeOf(lvalue.getType(), Type.NUMBER))
+                    if (!Type.subTypeOfUnion(lvalue.getType(), Type.NUMBER))
                         {throw new XPathException(this, ErrorCodes.XPTY0004, "'" +
                             Type.getTypeName(lvalue.getType()) + "(" + lvalue + ")' can not be an operand for " + operator.symbol);}
-                    if (!Type.subTypeOf(rvalue.getType(), Type.NUMBER))
+                    if (!Type.subTypeOfUnion(rvalue.getType(), Type.NUMBER))
                         {throw new XPathException(this, ErrorCodes.XPTY0004, "'" +
                             Type.getTypeName(rvalue.getType()) + "(" + rvalue + ")' can not be an operand for " + operator.symbol);}
                     //If the divisor is (positive or negative) zero, then an error is raised [err:FOAR0001]
@@ -189,10 +190,10 @@ public class OpNumeric extends BinaryOp {
             case MULTIPLICATION: return left.mult(right);
             case DIVISION: return left.div(right);
             case MODULUS: {
-                if (!Type.subTypeOf(left.getType(), Type.NUMBER))
+                if (!Type.subTypeOfUnion(left.getType(), Type.NUMBER))
                     {throw new XPathException(this, ErrorCodes.XPTY0004, "'" +
                         Type.getTypeName(left.getType()) + "(" + left + ")' is not numeric");}
-                if (!Type.subTypeOf(right.getType(), Type.NUMBER))
+                if (!Type.subTypeOfUnion(right.getType(), Type.NUMBER))
                     {throw new XPathException(this, ErrorCodes.XPTY0004, "'" +
                         Type.getTypeName(right.getType()) + "(" + right + ")' is not numeric");}
                 return ((NumericValue) left).mod((NumericValue) right);

@@ -1,21 +1,23 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2001-2015 The eXist Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.util;
 
@@ -27,15 +29,11 @@ import com.evolvedbinary.j8fu.function.FunctionE;
 import org.exist.util.crypto.digest.DigestOutputStream;
 import org.exist.util.crypto.digest.StreamableDigest;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.function.Predicate;
@@ -391,16 +389,19 @@ public class FileUtils {
      * Get the directory name from the path.
      *
      * @param path a path or uri
-     * @return the directory portion of a path by stripping the last '/' and
-     * anything following, unless the path has no '/', in which case '.' is returned,
-     * or ends with '/', in
-     * which case return the path unchanged.
+     * @return the directory portion of a path by stripping the last '/' or '\' and
+     * anything following. If the path has no '/' or '\', then '.' is returned. If the
+     * path ends with '/' or '\', the path is returned unchanged.
      */
     public static String dirname(final String path) {
-        final int islash = path.lastIndexOf('/');
-        if (islash >= 0 && islash < path.length() - 1) {
-            return path.substring(0, islash);
-        } else if (islash >= 0) {
+        int idx = path.lastIndexOf('/');
+        if (idx == -1) {
+            idx = path.lastIndexOf('\\');
+        }
+
+        if (idx >= 0 && idx < path.length() - 1) {
+            return path.substring(0, idx);
+        } else if (idx >= 0) {
             return path;
         } else {
             return ".";
@@ -458,7 +459,7 @@ public class FileUtils {
      */
     public static void copyWithDigest(final Path src, final Path dst, final StreamableDigest streamableDigest,
             final OpenOption... dstOptions) throws IOException {
-        try (final InputStream is = Files.newInputStream(src, READ)) {
+        try (final InputStream is = new BufferedInputStream(Files.newInputStream(src, READ))) {
             copyWithDigest(is, dst, streamableDigest);
         }
     }
@@ -489,7 +490,7 @@ public class FileUtils {
      * @throws IOException if an IO error occurs
      */
     public static void copyWithDigest(final InputStream is, final Path dst, final StreamableDigest streamableDigest, final OpenOption... dstOptions) throws IOException {
-        try (final OutputStream os = new DigestOutputStream(Files.newOutputStream(dst, dstOptions), streamableDigest)) {
+        try (final OutputStream os = new DigestOutputStream(new BufferedOutputStream(Files.newOutputStream(dst, dstOptions)), streamableDigest)) {
 
             final byte[] buf = new byte[8192];
             int read;
@@ -508,7 +509,7 @@ public class FileUtils {
      * @throws IOException if an IO error occurs
      */
     public static void digest(final Path path, final StreamableDigest streamableDigest) throws IOException {
-        try (final InputStream is = Files.newInputStream(path, READ)) {
+        try (final InputStream is = new BufferedInputStream(Files.newInputStream(path, READ))) {
             final byte[] buf = new byte[8192];
 
             int read;

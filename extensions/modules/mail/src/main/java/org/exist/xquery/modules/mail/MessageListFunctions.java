@@ -1,25 +1,24 @@
 /*
- *  eXist Mail Module Extension MessageListFunctions
- *  Copyright (C) 2006-09 Adam Retter <adam.retter@devon.gov.uk>
- *  www.adamretter.co.uk
- *  
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software Foundation
- *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *  
- *  $Id$
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.xquery.modules.mail;
 
 
@@ -555,7 +554,7 @@ public class MessageListFunctions extends BasicFunction
 			throw( new XPathException(this, "At least one child term is required for term with type: " + ((Element)terms).getAttribute( "type" ) ) );
 		}
 		
-		return st.toArray(new SearchTerm[st.size()]);
+		return st.toArray(new SearchTerm[0]);
 	}
 
 	private SearchTerm parseFromTerm( Node terms ) throws XPathException
@@ -564,7 +563,7 @@ public class MessageListFunctions extends BasicFunction
 		
 		String pattern  = ((Element)terms).getAttribute( "pattern" );
 		
-		if( pattern != null && pattern.length() > 0 ) {
+		if( pattern != null && !pattern.isEmpty()) {
 			st = new FromStringTerm( pattern );
 		} else {
 			throw( new XPathException(this, "Pattern attribute must be specified for term with type: " + ((Element)terms).getAttribute( "type" ) ) );
@@ -579,7 +578,7 @@ public class MessageListFunctions extends BasicFunction
 		
 		String pattern  = ((Element)terms).getAttribute( "pattern" );
 		
-		if( pattern != null && pattern.length() > 0 ) {
+		if( pattern != null && !pattern.isEmpty()) {
 			st = new SubjectTerm( pattern );
 		} else {
 			throw( new XPathException(this, "Pattern attribute must be specified for term with type: " + ((Element)terms).getAttribute( "type" ) ) );
@@ -594,7 +593,7 @@ public class MessageListFunctions extends BasicFunction
 		
 		String pattern  = ((Element)terms).getAttribute( "pattern" );
 		
-		if( pattern != null && pattern.length() > 0 ) {
+		if( pattern != null && !pattern.isEmpty()) {
 			st = new BodyTerm( pattern );
 		} else {
 			throw( new XPathException(this, "Pattern attribute must be specified for term with type: " + ((Element)terms).getAttribute( "type" ) ) );
@@ -614,7 +613,7 @@ public class MessageListFunctions extends BasicFunction
 			throw( new XPathException(this, "recipientType not specified for term with type: " + ((Element)terms).getAttribute( "type" ) ) );
 		}
 		
-		if( pattern != null && pattern.length() > 0 ) {
+		if( pattern != null && !pattern.isEmpty()) {
 			Message.RecipientType rtype = null;
 			
 			if( type.equalsIgnoreCase( "to" ) ) {
@@ -646,7 +645,7 @@ public class MessageListFunctions extends BasicFunction
 			throw( new XPathException(this, "name not specified for term with type: " + ((Element)terms).getAttribute( "type" ) ) );
 		}
 		
-		if( pattern != null && pattern.length() > 0 ) {
+		if( pattern != null && !pattern.isEmpty()) {
 			st = new HeaderTerm( name, pattern );
 		} else {
 			throw( new XPathException(this, "pattern attribute must be specified for term with type: " + ((Element)terms).getAttribute( "type" ) ) );
@@ -666,7 +665,7 @@ public class MessageListFunctions extends BasicFunction
 			throw( new XPathException(this, "value not specified for term with type: " + ((Element)terms).getAttribute( "type" ) ) );
 		}
 		
-		if( flag != null && flag.length() > 0 ) {
+		if( flag != null && !flag.isEmpty()) {
 			Flags flags = null;
 			
 			if( flag.equalsIgnoreCase( "answered" ) ) {
@@ -759,7 +758,7 @@ public class MessageListFunctions extends BasicFunction
 		
 		String comp  = ((Element)terms).getAttribute( "comparison" );
 		
-		if( comp != null && comp.length() > 0 ) {
+		if( comp != null && !comp.isEmpty()) {
 			if( comp.equalsIgnoreCase( "eq" ) ) {
 				cp = ComparisonTerm.EQ;
 			} else if( comp.equalsIgnoreCase( "ge" ) ) {

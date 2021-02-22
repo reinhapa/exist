@@ -1,38 +1,30 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-09 Wolfgang M. Meier
- *  wolfgang@exist-db.org
- *  http://exist.sourceforge.net
- *  
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
- *  
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
- *  
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *  
- *  $Id:
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
+ *
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery.functions.system;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.dom.QName;
-import org.exist.xquery.BasicFunction;
-import org.exist.xquery.Cardinality;
-import org.exist.xquery.ExternalModule;
-import org.exist.xquery.FunctionSignature;
-import org.exist.xquery.InternalModule;
-import org.exist.xquery.Module;
-import org.exist.xquery.XPathException;
-import org.exist.xquery.XQueryContext;
+import org.exist.xquery.*;
 import org.exist.xquery.value.BooleanValue;
 import org.exist.xquery.value.FunctionParameterSequenceType;
 import org.exist.xquery.value.FunctionReturnSequenceType;
@@ -41,6 +33,8 @@ import org.exist.xquery.value.QNameValue;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceType;
 import org.exist.xquery.value.Type;
+
+import static org.apache.commons.lang3.ArrayUtils.isEmpty;
 
 /**
  * Return whether the function is available
@@ -64,25 +58,27 @@ public class FunctionAvailable extends BasicFunction {
         super(context, signature);
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.BasicFunction#eval(org.exist.xquery.value.Sequence[], org.exist.xquery.value.Sequence)
-     */
     @Override
-    public Sequence eval(Sequence[] args, Sequence contextSequence) throws XPathException {
-        
+    public Sequence eval(final Sequence[] args, final Sequence contextSequence) throws XPathException {
         final QName functionName = ((QNameValue)args[0].itemAt(0)).getQName();
         final int arity = ((IntegerValue)args[1].itemAt(0)).getInt();
         
-        final Module module = context.getModule(functionName.getNamespaceURI());
+        final org.exist.xquery.Module[] modules = context.getModules(functionName.getNamespaceURI());
         boolean found = false;
-        if(module == null) {
+        if (isEmpty(modules)) {
             found = context.resolveFunction(functionName, arity) != null;
         } else {
-            if(module instanceof InternalModule) {
-                 found = ((InternalModule)module).getFunctionDef(functionName, arity) != null;
-            } else if(module instanceof ExternalModule) {
-                found = ((ExternalModule)module).getFunction(functionName, arity, context) != null;
-            } 
+            for (final org.exist.xquery.Module module : modules) {
+                if (module instanceof InternalModule) {
+                    found = ((InternalModule)module).getFunctionDef(functionName, arity) != null;
+                } else if (module instanceof ExternalModule) {
+                    found = ((ExternalModule)module).getFunction(functionName, arity, context) != null;
+                }
+
+                if (found) {
+                    break;
+                }
+            }
         }
         
         return BooleanValue.valueOf(found);

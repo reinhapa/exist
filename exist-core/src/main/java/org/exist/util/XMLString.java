@@ -1,22 +1,23 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2001-2017 The eXist-db Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.util;
 
@@ -245,7 +246,7 @@ public final class XMLString implements CharSequence, Comparable<CharSequence> {
         // 1) create a new array of the correct size for the data
         final int change = data.length() - count;
         final int newValueLength = length_ + change;
-        final char newValue[] = CharArrayPool.getCharArray(newValueLength);
+        final char[] newValue = CharArrayPool.getCharArray(newValueLength);
 
         // 2) copy everything from value_ to newValue that is before our offset
         System.arraycopy(value_, 0, newValue, 0, offset);
@@ -255,7 +256,7 @@ public final class XMLString implements CharSequence, Comparable<CharSequence> {
 
         // 4) copy everything from value_ to newValue_ that is after our offset + count
         final int remainingExistingCharacters;
-        if(data.length() > 0 && length_ < data.length()) {
+        if(!data.isEmpty() && length_ < data.length()) {
             // value_ is expanding or staying the same length
             remainingExistingCharacters = length_ - count;
         } else {
@@ -335,8 +336,8 @@ public final class XMLString implements CharSequence, Comparable<CharSequence> {
             final XMLString anotherString = (XMLString) anObject;
             if (length_ == anotherString.length_) {
                 int n = length_;
-                final char v1[] = value_;
-                final char v2[] = anotherString.value_;
+                final char[] v1 = value_;
+                final char[] v2 = anotherString.value_;
                 int i = start_;
                 int j = anotherString.start_;
 

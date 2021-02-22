@@ -1,21 +1,23 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2001-2019 The eXist Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 package org.exist.xmldb;
@@ -30,9 +32,7 @@ import org.xmldb.api.base.ErrorCodes;
 import org.xmldb.api.base.XMLDBException;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
@@ -213,7 +213,7 @@ public class RemoteRestoreService implements EXistRestoreService {
 
             String fileName = null;
             final byte[] chunk = new byte[(int) Math.min(backupZipFileSize, MAX_UPLOAD_CHUNK)];
-            try (final InputStream is = Files.newInputStream(backupZipFile)) {
+            try (final InputStream is = new BufferedInputStream(Files.newInputStream(backupZipFile))) {
                 int len = -1;
                 while ((len = is.read(chunk)) > -1) {
                     final List<Object> params = new ArrayList<>(4);
@@ -240,7 +240,7 @@ public class RemoteRestoreService implements EXistRestoreService {
         restoreListener.startedZipForTransfer(FileUtils.sizeQuietly(dir));
         try {
             final Path zipFile = Files.createTempFile("remote-restore-service", "zip");
-            try (final OutputStream fos = Files.newOutputStream(zipFile);
+            try (final OutputStream fos = new BufferedOutputStream(Files.newOutputStream(zipFile));
                  final ZipOutputStream zos = new ZipOutputStream(fos)) {
                 Files.walkFileTree(dir, new SimpleFileVisitor<Path>() {
                     @Override

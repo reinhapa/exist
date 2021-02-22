@@ -1,34 +1,36 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2001-2007 The eXist Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *
- *  $Id$
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery.value;
 
 import com.ibm.icu.text.Collator;
-import org.exist.util.FastStringBuffer;
-import org.exist.util.FloatingPointConverter;
+import net.sf.saxon.tree.util.FastStringBuffer;
+import net.sf.saxon.value.FloatingPointConverter;
 import org.exist.xquery.Constants;
 import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.XPathException;
 
+import javax.annotation.Nullable;
 import java.math.BigDecimal;
+import java.util.function.IntSupplier;
 
 public class DoubleValue extends NumericValue {
     // m × 2^e, where m is an integer whose absolute value is less than 2^53,
@@ -39,7 +41,7 @@ public class DoubleValue extends NumericValue {
     public static final DoubleValue NEGATIVE_INFINITY = new DoubleValue(Double.NEGATIVE_INFINITY);
     public static final DoubleValue NaN = new DoubleValue(Double.NaN);
 
-    private final double value;
+    final double value;
 
     public DoubleValue(final double value) {
         this.value = value;
@@ -75,7 +77,7 @@ public class DoubleValue extends NumericValue {
     public String getStringValue() {
         final FastStringBuffer sb = new FastStringBuffer(20);
         //0 is a dummy parameter
-        FloatingPointConverter.appendDouble(sb, value).getNormalizedString(FastStringBuffer.SUPPRESS_BOTH);
+        FloatingPointConverter.appendDouble(sb, value, false);
         return sb.toString();
     }
 
@@ -122,6 +124,23 @@ public class DoubleValue extends NumericValue {
     @Override
     public boolean isPositive() {
         return (Double.compare(value, 0.0) > Constants.EQUAL);
+    }
+
+    @Override
+    protected @Nullable IntSupplier createComparisonWith(final NumericValue other) {
+        final IntSupplier comparison;
+        if (other instanceof IntegerValue) {
+            comparison = () -> BigDecimal.valueOf(value).compareTo(new BigDecimal(((IntegerValue)other).value));
+        } else if (other instanceof DecimalValue) {
+            comparison = () -> BigDecimal.valueOf(value).compareTo(((DecimalValue)other).value);
+        } else if (other instanceof DoubleValue) {
+            comparison = () -> Double.compare(value, ((DoubleValue)other).value);
+        } else if (other instanceof FloatValue) {
+            comparison = () -> Double.compare(value, ((FloatValue)other).value);
+        } else {
+            return null;
+        }
+        return comparison;
     }
 
     @Override
@@ -293,7 +312,7 @@ public class DoubleValue extends NumericValue {
 
     @Override
     public ComputableValue div(final ComputableValue other) throws XPathException {
-        if (Type.subTypeOf(other.getType(), Type.NUMBER)) {
+        if (Type.subTypeOfUnion(other.getType(), Type.NUMBER)) {
             //Positive or negative zero divided by positive or negative zero returns NaN.
             if (this.isZero() && ((NumericValue) other).isZero()) {
                 return NaN;

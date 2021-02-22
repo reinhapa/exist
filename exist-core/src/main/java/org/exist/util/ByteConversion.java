@@ -1,23 +1,23 @@
-
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2000-04,  Wolfgang Meier (wolfgang@exist-db.org)
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- *  $Id$
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.util;
 
@@ -40,7 +40,7 @@ public class ByteConversion {
      * @deprecated reads the lowest byte first. will be replaced with
      *     {@link #byteToIntH(byte[], int)} for consistency.
      */
-    public final static int byteToInt( final byte data[], final int start ) {
+    public final static int byteToInt(final byte[] data, final int start ) {
         return ( data[start] & 0xff ) |
             ( ( data[start + 1] & 0xff ) << 8 ) |
             ( ( data[start + 2] & 0xff ) << 16 ) |
@@ -57,7 +57,7 @@ public class ByteConversion {
      *
      * @return the integer
      */
-    public final static int byteToIntH( final byte data[], final int start ) {
+    public final static int byteToIntH(final byte[] data, final int start ) {
         return ( data[start + 3] & 0xff ) |
             ( ( data[start + 2] & 0xff ) << 8 ) |
             ( ( data[start + 1] & 0xff ) << 16 ) |

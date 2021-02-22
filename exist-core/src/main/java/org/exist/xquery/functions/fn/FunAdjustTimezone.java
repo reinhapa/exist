@@ -1,23 +1,23 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2005-2009 The eXist Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *  
- * This program is distributed in the hope that it will be useful,
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *  
- *  $Id$
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery.functions.fn;
 
@@ -53,7 +53,7 @@ public class FunAdjustTimezone extends BasicFunction {
     public final static FunctionReturnSequenceType DATE_01_RETURN = new FunctionReturnSequenceType(Type.DATE, Cardinality.ZERO_OR_ONE, "the adjusted date");
     public final static FunctionReturnSequenceType TIME_01_RETURN = new FunctionReturnSequenceType(Type.TIME, Cardinality.ZERO_OR_ONE, "the adjusted time");
 
-    public final static FunctionSignature fnAdjustDateTimeToTimezone[] = {
+    public final static FunctionSignature[] fnAdjustDateTimeToTimezone = {
         new FunctionSignature(
             new QName("adjust-dateTime-to-timezone", Function.BUILTIN_FUNCTION_NS),
             "Adjusts the xs:dateTime value $date-time to the implicit timezone of the current locale.",
@@ -72,7 +72,7 @@ public class FunAdjustTimezone extends BasicFunction {
             DATE_TIME_01_RETURN)
     };
 
-    public final static FunctionSignature fnAdjustDateToTimezone[] = {
+    public final static FunctionSignature[] fnAdjustDateToTimezone = {
         new FunctionSignature(
             new QName("adjust-date-to-timezone", Function.BUILTIN_FUNCTION_NS),
             "Adjusts the xs:date value $date to the implicit timezone of the current locale.",
@@ -91,7 +91,7 @@ public class FunAdjustTimezone extends BasicFunction {
             DATE_01_RETURN)
     };
 
-    public final static FunctionSignature fnAdjustTimeToTimezone[] = {
+    public final static FunctionSignature[] fnAdjustTimeToTimezone = {
         new FunctionSignature(
             new QName("adjust-time-to-timezone", Function.BUILTIN_FUNCTION_NS),
             "Adjusts the xs:time value $time to the implicit timezone of the current locale.",

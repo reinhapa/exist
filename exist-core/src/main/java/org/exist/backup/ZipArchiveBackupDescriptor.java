@@ -1,23 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2008-2010 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- *  $Id$
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.backup;
 
@@ -37,7 +37,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Enumeration;
+import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -147,6 +153,31 @@ public class ZipArchiveBackupDescriptor extends AbstractBackupDescriptor {
         }
 
         return bd;
+    }
+
+    @Override
+    public List<BackupDescriptor> getChildBackupDescriptors() {
+        final Pattern ptnDescriptor = Pattern.compile("(" + base + "/[^/]+/" + ")" + BackupDescriptor.COLLECTION_DESCRIPTOR);
+        final Matcher mtcDescriptor = ptnDescriptor.matcher("");
+        try (final Stream<BackupDescriptor> entries = archive.stream()
+                .map(zipEntry -> {
+                    mtcDescriptor.reset(zipEntry.getName());
+                    if (mtcDescriptor.matches()) {
+                        try {
+                            return Optional.<ZipArchiveBackupDescriptor>of(new ZipArchiveBackupDescriptor(archive, mtcDescriptor.group(1)));
+                        } catch (final FileNotFoundException e) {
+                            LOG.warn(e.getMessage(), e);
+                            return Optional.<ZipArchiveBackupDescriptor>empty();
+                        }
+                    } else {
+                        return Optional.<ZipArchiveBackupDescriptor>empty();
+                    }
+                })
+                .filter(Optional::isPresent)
+                .map(Optional::get)) {
+
+            return entries.collect(Collectors.toList());
+        }
     }
 
 

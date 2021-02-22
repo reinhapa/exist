@@ -1,3 +1,24 @@
+/*
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
+ *
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 package org.exist.xquery.functions.fn;
 
 import io.lacuna.bifurcan.IMap;
@@ -63,16 +84,16 @@ public class FnRandomNumberGenerator extends BasicFunction {
             }
         }
 
-        final XORShiftRandom random = seed.map(XORShiftRandom::new).orElseGet(() -> new XORShiftRandom());
+        final XORShiftRandom random = seed.map(XORShiftRandom::new).orElseGet(XORShiftRandom::new);
 
         return buildResult(context, random);
     }
 
-    private static MapType buildResult(final XQueryContext context, XORShiftRandom random) throws XPathException {
+    private static MapType buildResult(final XQueryContext context, XORShiftRandom random) {
         // NOTE: we must create a copy so that `Random#nextDouble` does not interfere with multiple `next()` calls on the same random number generator
         random = random.copy();
 
-        final IMap<AtomicValue, Sequence> result = newLinearMap();
+        final IMap<AtomicValue, Sequence> result = newLinearMap(null);
         result.put(new StringValue("number"), new DoubleValue(random.nextDouble()));
         result.put(new StringValue("next"), nextFunction(context, random));
         result.put(new StringValue("permute"), permuteFunction(context, random));
@@ -131,7 +152,7 @@ public class FnRandomNumberGenerator extends BasicFunction {
 
         @Override
         public Sequence eval(final Sequence contextSequence, final Item contextItem) throws XPathException {
-            final Sequence args[] = getCurrentArguments();
+            final Sequence[] args = getCurrentArguments();
             if (args == null || args.length == 0) {
                 return Sequence.EMPTY_SEQUENCE;
             }

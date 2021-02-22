@@ -1,94 +1,88 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-08 Wolfgang M. Meier
- *  wolfgang@exist-db.org
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- *  $Id$
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.http.urlrewrite;
 
-import java.io.*;
-
+import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
+import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
+import org.exist.EXistException;
+import org.exist.Namespaces;
+import org.exist.collections.Collection;
+import org.exist.dom.persistent.BinaryDocument;
+import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.persistent.LockedDocument;
+import org.exist.http.Descriptor;
 import org.exist.http.servlets.Authenticator;
 import org.exist.http.servlets.BasicAuthenticator;
+import org.exist.http.servlets.HttpRequestWrapper;
+import org.exist.http.servlets.HttpResponseWrapper;
+import org.exist.security.AuthenticationException;
+import org.exist.security.Permission;
+import org.exist.security.PermissionDeniedException;
+import org.exist.security.Subject;
 import org.exist.security.internal.web.HttpAccount;
-import org.exist.source.Source;
 import org.exist.source.DBSource;
-import org.exist.source.SourceFactory;
 import org.exist.source.FileSource;
-import org.exist.util.LockException;
-import org.exist.util.io.FastByteArrayInputStream;
-import org.exist.util.io.FastByteArrayOutputStream;
-import org.exist.util.serializer.XQuerySerializer;
-import org.exist.xquery.functions.request.RequestModule;
-import org.exist.xquery.functions.response.ResponseModule;
-import org.exist.xquery.functions.session.SessionModule;
-import org.exist.xquery.*;
-import org.exist.xquery.value.Sequence;
-import org.exist.xquery.value.Item;
-import org.exist.xquery.value.Type;
-import org.exist.xquery.value.NodeValue;
-import org.exist.Namespaces;
-import org.exist.EXistException;
-import org.exist.collections.Collection;
-import org.exist.dom.persistent.DocumentImpl;
-import org.exist.dom.persistent.BinaryDocument;
-import org.exist.xmldb.XmldbURI;
-import org.exist.security.*;
+import org.exist.source.Source;
+import org.exist.source.SourceFactory;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.XQueryPool;
 import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.Serializer;
+import org.exist.util.LockException;
 import org.exist.util.MimeType;
-import org.exist.http.servlets.HttpRequestWrapper;
-import org.exist.http.servlets.HttpResponseWrapper;
-import org.exist.http.Descriptor;
-
-import org.w3c.dom.Node;
+import org.exist.util.serializer.XQuerySerializer;
+import org.exist.xmldb.XmldbURI;
+import org.exist.xquery.*;
+import org.exist.xquery.value.Item;
+import org.exist.xquery.value.NodeValue;
+import org.exist.xquery.value.Sequence;
+import org.exist.xquery.value.Type;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
 import org.xml.sax.SAXException;
-import org.xmldb.api.base.Database;
 import org.xmldb.api.DatabaseManager;
+import org.xmldb.api.base.Database;
 
 import javax.annotation.Nullable;
 import javax.servlet.*;
 import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 import javax.xml.transform.OutputKeys;
-
+import java.io.*;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -750,7 +744,7 @@ public class XQueryURLRewrite extends HttpServlet {
             }
 
             if (controllerDoc.getResourceType() != DocumentImpl.BINARY_FILE ||
-                    !"application/xquery".equals(controllerDoc.getMetadata().getMimeType())) {
+                    !"application/xquery".equals(controllerDoc.getMimeType())) {
                 LOG.warn("XQuery resource: " + query + " is not an XQuery or declares a wrong mime-type");
                 return null;
             }
@@ -875,14 +869,14 @@ public class XQueryURLRewrite extends HttpServlet {
             try {
                 final XmldbURI locationUri = XmldbURI.xmldbUriFor(query);
 
-                try (final LockedDocument lockedSourceDoc = broker.getXMLResource(locationUri.toCollectionPathURI(), LockMode.READ_LOCK);) {
+                try (final LockedDocument lockedSourceDoc = broker.getXMLResource(locationUri.toCollectionPathURI(), LockMode.READ_LOCK)) {
                     if (lockedSourceDoc == null) {
                         throw new ServletException("XQuery resource: " + query + " not found in database");
                     }
 
                     final DocumentImpl sourceDoc = lockedSourceDoc.getDocument();
                     if (sourceDoc.getResourceType() != DocumentImpl.BINARY_FILE ||
-                            !"application/xquery".equals(sourceDoc.getMetadata().getMimeType())) {
+                            !"application/xquery".equals(sourceDoc.getMimeType())) {
                         throw new ServletException("XQuery resource: " + query + " is not an XQuery or " +
                                 "declares a wrong mime-type");
                     }
@@ -1187,7 +1181,7 @@ public class XQueryURLRewrite extends HttpServlet {
             for (final Entry<String, List<String>> param : addedParams.entrySet()) {
                 final List<String> values = param.getValue();
                 if (values != null) {
-                    parameterMap.put(param.getKey(), values.toArray(new String[values.size()]));
+                    parameterMap.put(param.getKey(), values.toArray(new String[0]));
                 } else {
                     parameterMap.put(param.getKey(), new String[0]);
                 }
@@ -1205,7 +1199,7 @@ public class XQueryURLRewrite extends HttpServlet {
             final List<String> values = addedParams.get(name);
 
             if (values != null) {
-                return values.toArray(new String[values.size()]);
+                return values.toArray(new String[0]);
             } else {
                 return null;
             }
@@ -1408,7 +1402,7 @@ public class XQueryURLRewrite extends HttpServlet {
     }
 
     private static class CachingServletOutputStream extends ServletOutputStream {
-        private FastByteArrayOutputStream ostream = new FastByteArrayOutputStream(512);
+        private UnsynchronizedByteArrayOutputStream ostream = new UnsynchronizedByteArrayOutputStream(512);
 
         protected byte[] getData() {
             return ostream.toByteArray();
@@ -1441,13 +1435,13 @@ public class XQueryURLRewrite extends HttpServlet {
     }
 
     private static class CachingServletInputStream extends ServletInputStream {
-        private final FastByteArrayInputStream istream;
+        private final UnsynchronizedByteArrayInputStream istream;
 
         public CachingServletInputStream(final byte[] data) {
             if (data == null) {
-                istream = new FastByteArrayInputStream(new byte[0]);
+                istream = new UnsynchronizedByteArrayInputStream(new byte[0]);
             } else {
-                istream = new FastByteArrayInputStream(data);
+                istream = new UnsynchronizedByteArrayInputStream(data);
             }
         }
 

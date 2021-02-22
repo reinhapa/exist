@@ -1,7 +1,41 @@
-// ========================================================================
-// Copyright (c) 2002 Mort Bay Consulting (Australia) Pty. Ltd.
-// $Id$
-// ========================================================================
+/*
+ * NOTE: This file is in part based on code from Mort Bay Consulting.
+ * The original license statement is also included below.
+ *
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
+ *
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * ---------------------------------------------------------------------
+ *
+ * Copyright 2002-2005 Mort Bay Consulting Pty. Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.exist.start;
 
 import java.io.*;
@@ -118,7 +152,7 @@ public class Main {
         main.invoke(null, method_params);
     }
 
-    public void run(String[] args) {
+    public void run(final String[] args) {
         try {
             runEx(args);
         } catch (final StartException e) {
@@ -154,7 +188,7 @@ public class Main {
                 _mode = "other";
             }
 
-            String[] nargs = new String[args.length - 1];
+            final String[] nargs = new String[args.length - 1];
             if (args.length > 1) {
                 System.arraycopy(args, 1, nargs, 0, args.length - 1);
             }
@@ -256,10 +290,8 @@ public class Main {
         Optional<String> value = Optional.ofNullable(System.getProperty(sysPropName));
         if (!value.isPresent()) {
             value = Optional.ofNullable(System.getenv().get(envVarName));
-            if (value.isPresent()) {
-                // if we managed to detect from environment, store it in a system property
-                System.setProperty(sysPropName, value.get());
-            }
+            // if we managed to detect from environment, store it in a system property
+            value.ifPresent(s -> System.setProperty(sysPropName, s));
         }
 
         if (_debug && value.isPresent()) {

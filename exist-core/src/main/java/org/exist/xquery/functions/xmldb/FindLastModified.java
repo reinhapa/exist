@@ -1,30 +1,30 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2001-2017 The eXist Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.xquery.functions.xmldb;
 
 import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.persistent.NewArrayNodeSet;
 import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.persistent.NodeSet;
-import org.exist.dom.persistent.NodeSetIterator;
 import org.exist.dom.QName;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
@@ -40,7 +40,7 @@ import org.exist.xquery.value.Type;
 
 public class FindLastModified extends BasicFunction {
 
-	public final static FunctionSignature signatures[] = new FunctionSignature[]{
+	public final static FunctionSignature[] signatures = new FunctionSignature[]{
 			new FunctionSignature(
 					new QName("find-last-modified-since", XMLDBModule.NAMESPACE_URI, XMLDBModule.PREFIX),
 					"Filters the given node set to only include nodes from resources which were modified since the specified " +
@@ -84,7 +84,7 @@ public class FindLastModified extends BasicFunction {
 
         for (final NodeProxy proxy : nodes) {
             final DocumentImpl doc = proxy.getOwnerDocument();
-            final long modified = doc.getMetadata().getLastModified();
+            final long modified = doc.getLastModified();
 
             boolean matches;
             if (this.isCalledAs("find-last-modified-since")) {

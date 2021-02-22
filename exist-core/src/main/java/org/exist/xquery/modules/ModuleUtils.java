@@ -1,23 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-08 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * $Id$
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery.modules;
 
@@ -350,12 +350,30 @@ public class ModuleUtils {
             
             //modify the map
             modifier.modify(map);
-            
         }
     }
-    
+
+    public static <T, U> U readContextMap(final XQueryContext context, final String contextMapName, final ContextMapReader<T, U> reader) {
+        try(final ManagedLock<ReadWriteLock> readLock = ManagedLock.acquire(contextMapLocks.getLock(contextMapName), LockMode.READ_LOCK)) {
+            // get the existing map from the context
+            Map<Long, T> map = (Map<Long, T>)context.getAttribute(contextMapName);
+            if (map == null) {
+                map = Collections.emptyMap();
+            }
+
+            //modify the map
+            return reader.read(map);
+        }
+    }
+
+    @FunctionalInterface
     public interface ContextMapModifier<T> {
-        public void modify(Map<Long, T> map);
+        void modify(Map<Long, T> map);
+    }
+
+    @FunctionalInterface
+    public interface ContextMapReader<T, U> {
+        U read(Map<Long, T> map);
     }
     
     public static abstract class ContextMapEntryModifier<T> implements ContextMapModifier<T> {

@@ -1,22 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-04,  Wolfgang M. Meier (meier@ifs.tu-darmstadt.de)
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Library General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This library is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Library General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Library General Public
- *  License along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- *  $Id$
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery;
 
@@ -53,7 +54,7 @@ public class Predicate extends PathExpr {
         UNKNOWN,
         NODE,
         BOOLEAN,
-        POSITIONAL;
+        POSITIONAL
     }
 
     private CachedResult cached = null;
@@ -106,7 +107,7 @@ public class Predicate extends PathExpr {
             executionMode = NODE;
             // Case 2: predicate expression returns a unique number and has no
             // dependency with the context item.
-        } else if (Type.subTypeOf(innerType, Type.NUMBER) &&
+        } else if (Type.subTypeOfUnion(innerType, Type.NUMBER) &&
                 !Dependency.dependsOn(inner, Dependency.CONTEXT_ITEM) &&
                     inner.getCardinality().isSuperCardinalityOrEqualOf(Cardinality.EXACTLY_ONE)) {
             executionMode = POSITIONAL;
@@ -220,7 +221,7 @@ public class Predicate extends PathExpr {
             // the inner sequence
             if (executionMode == NODE && !(contextSequence instanceof VirtualNodeSet)) {
                 // (1,2,2,4)[.]
-                if (Type.subTypeOf(contextSequence.getItemType(), Type.NUMBER)) {
+                if (Type.subTypeOfUnion(contextSequence.getItemType(), Type.NUMBER)) {
                     recomputedExecutionMode = POSITIONAL;
                 } else {
                     recomputedExecutionMode = BOOLEAN;
@@ -236,7 +237,7 @@ public class Predicate extends PathExpr {
                 innerSeq = inner.eval(contextSequence);
                 // Only if we have an actual *singleton* of numeric items
                 if (innerSeq.hasOne()
-                        && Type.subTypeOf(innerSeq.getItemType(), Type.NUMBER)) {
+                        && Type.subTypeOfUnion(innerSeq.getItemType(), Type.NUMBER)) {
                     recomputedExecutionMode = POSITIONAL;
                 }
             }
@@ -258,7 +259,7 @@ public class Predicate extends PathExpr {
                     // Try to promote a boolean evaluation to a positional one
                     // Only if we have an actual *singleton* of numeric items
                 } else if (innerSeq.hasOne()
-                        && Type.subTypeOf(innerSeq.getItemType(), Type.NUMBER)) {
+                        && Type.subTypeOfUnion(innerSeq.getItemType(), Type.NUMBER)) {
                     recomputedExecutionMode = POSITIONAL;
                 }
             }
@@ -306,7 +307,7 @@ public class Predicate extends PathExpr {
             // TODO : is this block also accurate in reverse-order processing ?
             // Compute each position in the boolean-like way...
             // ... but grab some context positions ! -<8-P
-            if (Type.subTypeOf(inner.returnsType(), Type.NUMBER)
+            if (Type.subTypeOfUnion(inner.returnsType(), Type.NUMBER)
                     && Dependency.dependsOn(inner, Dependency.CONTEXT_ITEM)) {
                 final Set<NumericValue> positions = new TreeSet<>();
                 for (final SequenceIterator i = contextSequence.iterate(); i.hasNext(); p++) {
@@ -336,7 +337,7 @@ public class Predicate extends PathExpr {
                     final Item item = i.nextItem();
                     final Sequence innerSeq = inner.eval(contextSequence, item);
                     if (innerSeq.hasOne()
-                            && Type.subTypeOf(innerSeq.getItemType(), Type.NUMBER)) {
+                            && Type.subTypeOfUnion(innerSeq.getItemType(), Type.NUMBER)) {
                         // TODO : introduce a check in innerSeq.hasOne() ?
                         final NumericValue nv = (NumericValue) innerSeq;
                         // Non integers return... nothing, not even an error !

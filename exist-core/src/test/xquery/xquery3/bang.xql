@@ -1,4 +1,25 @@
-xquery version "3.0";
+(:
+ : eXist-db Open Source Native XML Database
+ : Copyright (C) 2001 The eXist-db Authors
+ :
+ : info@exist-db.org
+ : http://www.exist-db.org
+ :
+ : This library is free software; you can redistribute it and/or
+ : modify it under the terms of the GNU Lesser General Public
+ : License as published by the Free Software Foundation; either
+ : version 2.1 of the License, or (at your option) any later version.
+ :
+ : This library is distributed in the hope that it will be useful,
+ : but WITHOUT ANY WARRANTY; without even the implied warranty of
+ : MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ : Lesser General Public License for more details.
+ :
+ : You should have received a copy of the GNU Lesser General Public
+ : License along with this library; if not, write to the Free Software
+ : Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ :)
+xquery version "3.1";
 
 module namespace bang="http://exist-db.org/xquery/test/bang";
 
@@ -143,9 +164,9 @@ function bang:constructor() {
 };
 
 declare
-    %test:assertTrue
+    %test:assertEquals("a", "b", "c")
 function bang:implicit-context() {
-    count(//* ! local-name(.))
+    document { <a><b/><c/></a> } ! //* ! local-name(.)
 };
 
 declare
@@ -181,3 +202,90 @@ declare
 function bang:element-left-number-attribute-right() {
     <emp id='1'/> ! number(@id)
 };
+
+declare
+    %test:assertEquals(1,2,3)
+function bang:map-get () {
+    (map {'a':1}, map {'a':2}, map {'a':3}) ! map:get(., 'a')
+};
+
+declare
+    %test:assertEquals(1,2,3)
+function bang:array-get () {
+    ([1], [2], [3]) ! array:get(., 1)
+};
+
+declare
+     %test:assertEquals(1,2,3)
+function bang:map-lookup-context-item () {
+    (map {'a':1}, map {'a':2}, map {'a':3}) ! .?a
+};
+
+declare
+     %test:assertEquals(1,2,3)
+function bang:map-lookup-parenthesized () {
+    (map {'a':1}, map {'a':2}, map {'a':3}) ! (.?a)
+};
+
+declare
+     %test:assertEquals(1,2,3)
+function bang:map-lookup-parenthesized-context-item () {
+    (map {'a':1}, map {'a':2}, map {'a':3}) ! (.)?a
+};
+
+declare
+    %test:assertEquals(1,2,3)
+function bang:array-lookup-standard () {
+    ([1], [2], [3]) ! .?1
+};
+
+declare
+    %test:assertEquals(1,2,3)
+function bang:array-lookup-parenthesized () {
+    ([1], [2], [3]) ! (.?1)
+};
+
+declare
+    %test:assertEquals(1,2,3)
+function bang:array-lookup-parenthesized-context-item () {
+    ([1], [2], [3]) ! (.)?1
+};
+
+declare
+    %test:assertEquals(1,1,1,1,1)
+function bang:mixed-function-types-call () {
+    let $id := function ($a) { $a }
+    return (function ($a) {1}, $id, sum#1, [1], map{1:1}) ! .(1)
+};
+
+declare
+    %test:assertEquals(1,1,1,1,1)
+function bang:mixed-function-types-call-parenthesized () {
+    let $id := function ($a) { $a }
+    return (function ($a) {1}, $id, sum#1, [1], map{1:1}) ! (.(1))
+};
+
+declare
+    %test:assertEquals(1,1,1,1,1)
+function bang:mixed-function-types-call-parenthesized-context-item () {
+    let $id := function ($a) { $a }
+    return (function ($a) {1}, $id, sum#1, [1], map{1:1}) ! (.)(1)
+};
+
+(:~
+ : parse error needs to be fixed first
+ : https://github.com/eXist-db/exist/issues/1655
+
+declare
+    %test:assertEquals(1,2,3)
+function bang:array-lookup-implicit-context () {
+    ([1], [2], [3]) ! ?1
+};
+
+declare
+    %test:assertEquals(1,2,3)
+function bang:map-lookup-implicit-context () {
+    (map {'a':1}, map {'a':2}, map {'a':3}) ! ?a
+};
+
+ :)

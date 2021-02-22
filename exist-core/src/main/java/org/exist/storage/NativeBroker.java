@@ -1,21 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2015 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.storage;
 
@@ -64,8 +66,8 @@ import org.exist.storage.txn.Txn;
 import org.exist.util.*;
 import org.exist.util.crypto.digest.DigestType;
 import org.exist.util.crypto.digest.MessageDigest;
-import org.exist.util.io.FastByteArrayInputStream;
-import org.exist.util.io.FastByteArrayOutputStream;
+import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
+import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.TerminatedException;
@@ -144,7 +146,7 @@ public class NativeBroker extends DBBroker {
 
     public static final int OFFSET_COLLECTION_ID = 0;
 
-    public final static String INIT_COLLECTION_CONFIG = "collection.xconf.init";
+    public final static String INIT_COLLECTION_CONFIG = CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE + ".init";
 
     /** in-memory buffer size to use when copying binary resources */
     private final static int BINARY_RESOURCE_BUF_SIZE = 65536;
@@ -1197,7 +1199,7 @@ public class NativeBroker extends DBBroker {
                 PermissionFactory.chown(this, createCollectionPerms, Optional.of(sourceCollection.getPermissions().getOwner().getName()), Optional.of(sourceCollection.getPermissions().getGroup().getName()));
             }
 
-            created = sourceCollection.getMetadata().getCreated();
+            created = sourceCollection.getCreated();
         } else {
             created = 0;
         }
@@ -1526,7 +1528,11 @@ public class NativeBroker extends DBBroker {
         if (sourceCollectionParent != null) {
             final XmldbURI sourceCollectionName = sourceCollectionUri.lastSegment();
             sourceCollectionParent.removeCollection(this, sourceCollectionName);
-            saveCollection(transaction, sourceCollectionParent);
+
+            // if this is a rename, the save will happen after we "add the destination to the target" below...
+            if (!sourceCollectionParent.getURI().equals(targetCollection)) {
+                saveCollection(transaction, sourceCollectionParent);
+            }
         }
 
         // remove source from cache
@@ -1545,9 +1551,7 @@ public class NativeBroker extends DBBroker {
 
         // add destination to target
         targetCollection.addCollection(this, sourceCollection);
-        if (sourceCollectionParent != targetCollection) {
-            saveCollection(transaction, targetCollection);
-        }
+        saveCollection(transaction, targetCollection);
 
         if(fireTrigger) {
             trigger.afterMoveCollection(this, transaction, sourceCollection, sourceCollectionUri);
@@ -1812,7 +1816,7 @@ public class NativeBroker extends DBBroker {
 
         try(final ManagedLock<ReentrantLock> collectionsDbLock = lockManager.acquireBtreeWriteLock(collectionsDb.getLockName())) {
             final Value name = new CollectionStore.CollectionKey(collection.getURI().toString());
-            try(final VariableByteOutputStream os = new VariableByteOutputStream(8)) {
+            try(final VariableByteOutputStream os = new VariableByteOutputStream(256)) {
                 collection.serialize(os);
                 final long address = collectionsDb.put(transaction, name, os.data(), true);
                 if (address == BFile.UNKNOWN_ADDRESS) {
@@ -1997,11 +2001,7 @@ public class NativeBroker extends DBBroker {
                     final int tmpDocId = getNextResourceId(transaction);
                     final Permission permission = PermissionFactory.getDefaultResourcePermission(getBrokerPool().getSecurityManager());
                     permission.setMode(Permission.DEFAULT_TEMPORARY_DOCUMENT_PERM);
-                    final DocumentMetadata metadata = new DocumentMetadata();
-                    final long now = System.currentTimeMillis();
-                    metadata.setLastModified(now);
-                    metadata.setCreated(now);
-                    final DocumentImpl targetDoc = new DocumentImpl(pool, temp, tmpDocId, docName, permission, 0, null, metadata);
+                    final DocumentImpl targetDoc = new DocumentImpl(pool, temp, tmpDocId, docName, permission, 0, null, System.currentTimeMillis(), null, null, null);
 
                     //index the temporary document
                     final DOMIndexer indexer = new DOMIndexer(this, transaction, doc, targetDoc);
@@ -2112,7 +2112,7 @@ public class NativeBroker extends DBBroker {
      */
     @Override
     public void storeXMLResource(final Txn transaction, final DocumentImpl doc) {
-        try(final VariableByteOutputStream os = new VariableByteOutputStream(8);
+        try(final VariableByteOutputStream os = new VariableByteOutputStream(256);
                 final ManagedLock<ReentrantLock> collectionsDbLock = lockManager.acquireBtreeWriteLock(collectionsDb.getLockName())) {
             doc.write(os);
             final Value key = new CollectionStore.DocumentKey(doc.getCollection().getId(), doc.getResourceType(), doc.getDocId());
@@ -2142,7 +2142,7 @@ public class NativeBroker extends DBBroker {
     @Override
     public void storeBinaryResource(final Txn transaction, final BinaryDocument blob, final byte[] data)
             throws IOException {
-        try(final InputStream is = new FastByteArrayInputStream(data)) {
+        try(final InputStream is = new UnsynchronizedByteArrayInputStream(data)) {
                 storeBinaryResource(transaction, blob, is);
         }
     }
@@ -2209,7 +2209,8 @@ public class NativeBroker extends DBBroker {
         //TODO : resolve URIs !
         final XmldbURI collUri = fileName.removeLastSegment();
         final XmldbURI docUri = fileName.lastSegment();
-        try(final Collection collection = openCollection(collUri, LockMode.READ_LOCK)) {
+        final LockMode collectionLockMode = lockManager.relativeCollectionLockMode(LockMode.READ_LOCK, lockMode);
+        try(final Collection collection = openCollection(collUri, collectionLockMode)) {
             if (collection == null) {
                 LOG.debug("Collection '{}' not found!", collUri);
                 return null;
@@ -2256,8 +2257,8 @@ public class NativeBroker extends DBBroker {
         final BlobStore blobStore = pool.getBlobStore();
         try (final InputStream is = blobStore.get(transaction, blob.getBlobId())) {
             if (is != null) {
-                if (os instanceof FastByteArrayOutputStream) {
-                    ((FastByteArrayOutputStream)os).write(is);
+                if (os instanceof UnsynchronizedByteArrayOutputStream) {
+                    ((UnsynchronizedByteArrayOutputStream)os).write(is);
                 } else {
                     copy(is, os);
                 }
@@ -2585,11 +2586,11 @@ public class NativeBroker extends DBBroker {
 
         // btime (birth time)
         if (!overwrittingDest) {
-            destDocument.getMetadata().setCreated(srcDocument.getMetadata().getLastModified());  // Indeed! ...the birth time of the dest file is the last modified time of the source file
+            destDocument.setCreated(srcDocument.getLastModified());  // Indeed! ...the birth time of the dest file is the last modified time of the source file
         }
 
         // mtime (modified time)
-        destDocument.getMetadata().setLastModified(srcDocument.getMetadata().getLastModified());
+        destDocument.setLastModified(srcDocument.getLastModified());
 
     }
 
@@ -2755,8 +2756,8 @@ public class NativeBroker extends DBBroker {
             throw new IOException(DATABASE_IS_READ_ONLY);
         }
         try {
-            if(LOG.isInfoEnabled()) {
-                LOG.info("Removing document {} ({}) ...", document.getFileURI(), document.getDocId());
+            if(LOG.isDebugEnabled()) {
+                LOG.debug("Removing document {} ({}) ...", document.getFileURI(), document.getDocId());
             }
 
             final DocumentTrigger trigger = new DocumentTriggers(this, transaction);
@@ -2801,7 +2802,7 @@ public class NativeBroker extends DBBroker {
 
     private void dropDomNodes(final Txn transaction, final DocumentImpl document) {
         try {
-            if(!document.getMetadata().isReferenced()) {
+            if(!document.isReferenced()) {
                 new DOMTransaction(this, domDb, () -> lockManager.acquireBtreeWriteLock(domDb.getLockName())) {
                     @Override
                     public Object start() {
@@ -3002,8 +3003,8 @@ public class NativeBroker extends DBBroker {
                 }
             }.run();
             doc.copyChildren(tempDoc);
-            doc.getMetadata().setSplitCount(0);
-            doc.getMetadata().setPageCount(tempDoc.getMetadata().getPageCount());
+            doc.setSplitCount(0);
+            doc.setPageCount(tempDoc.getPageCount());
             storeXMLResource(transaction, doc);
             closeDocument();
             if (LOG.isDebugEnabled()) {

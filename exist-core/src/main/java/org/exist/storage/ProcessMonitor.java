@@ -1,21 +1,23 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2001-2019 The eXist Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.storage;
 
@@ -25,6 +27,7 @@ import org.exist.http.servlets.RequestWrapper;
 import org.exist.http.urlrewrite.XQueryURLRewrite;
 import org.exist.source.Source;
 import org.exist.util.Configuration;
+import org.exist.xquery.Module;
 import org.exist.xquery.XQueryContext;
 import org.exist.xquery.XQueryWatchDog;
 
@@ -35,6 +38,8 @@ import java.util.*;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
+
+import static org.apache.commons.lang3.ArrayUtils.isEmpty;
 
 /**
  * Class to keep track of all running queries in a database instance. The main
@@ -153,7 +158,7 @@ public class ProcessMonitor implements BrokerPoolService {
         if (found && elapsed > minTime) {
             synchronized (history) {
                 final Source source = watchdog.getContext().getSource();
-                final String sourceKey = source == null ? "unknown" : source.path();
+                final String sourceKey = source == null ? "unknown" : source.pathOrShortIdentifier();
                 QueryHistory qh = new QueryHistory(sourceKey, historyTimespan);
                 qh.setMostRecentExecutionTime(watchdog.getStartTime());
                 qh.setMostRecentExecutionDuration(elapsed);
@@ -365,10 +370,11 @@ public class ProcessMonitor implements BrokerPoolService {
      * @return HTTP request URI by which a query was called
      */
     public static String getRequestURI(final XQueryWatchDog watchdog) {
-        final RequestModule reqModule = (RequestModule) watchdog.getContext().getModule(RequestModule.NAMESPACE_URI);
-        if (reqModule == null) {
+        final Module[] modules = watchdog.getContext().getModules(RequestModule.NAMESPACE_URI);
+        if (isEmpty(modules)) {
             return null;
         }
+
         final Optional<RequestWrapper> maybeRequest = Optional.ofNullable(watchdog.getContext())
                 .map(XQueryContext::getHttpContext)
                 .map(XQueryContext.HttpContext::getRequest);

@@ -1,21 +1,23 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2019 The eXist Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery.functions.fn;
 
@@ -101,12 +103,12 @@ public class FunXmlToJson extends BasicFunction {
         final JsonFactory jsonFactory = new JsonFactory();
         final Integer stackSeparator = 0;
         //use ArrayList<Object> to store String type keys and non-string type separators
-        final ArrayList<Object> mapkeyArrayList = new ArrayList<Object>();
+        final ArrayList<Object> mapkeyArrayList = new ArrayList<>();
         boolean elementKeyIsEscaped = false;
         boolean elementValueIsEscaped = false;
         XMLStreamReader reader = null;
         try (
-                final JsonGenerator jsonGenerator = jsonFactory.createGenerator(writer);
+                final JsonGenerator jsonGenerator = jsonFactory.createGenerator(writer)
         ) {
             reader = context.getXMLStreamReader(nodeValue);
             int previous = XMLStreamReader.START_DOCUMENT;
@@ -161,11 +163,11 @@ public class FunXmlToJson extends BasicFunction {
                                 jsonGenerator.writeEndArray();
                                 break;
                             case "boolean":
-                                final boolean tempBoolean = !("".equals(tempString) || "0".equals(tempString) || "false".equals(tempString));
+                                final boolean tempBoolean = !(tempString.isEmpty() || "0".equals(tempString) || "false".equals(tempString));
                                 jsonGenerator.writeBoolean(tempBoolean);
                                 break;
                             case "map":
-                                while (mapkeyArrayList.size() > 0 && mapkeyArrayList.remove(mapkeyArrayList.size() - 1) != stackSeparator) {
+                                while (!mapkeyArrayList.isEmpty() && mapkeyArrayList.remove(mapkeyArrayList.size() - 1) != stackSeparator) {
                                 }
                                 jsonGenerator.writeEndObject();
                                 break;
@@ -176,8 +178,12 @@ public class FunXmlToJson extends BasicFunction {
                                 jsonGenerator.writeNull();
                                 break;
                             case "number":
-                                final double tempDouble = Double.parseDouble(tempString);
-                                jsonGenerator.writeNumber(tempDouble);
+                                try{
+                                    final double tempDouble = Double.parseDouble(tempString);
+                                    jsonGenerator.writeNumber(tempDouble);
+                                } catch (NumberFormatException ex){
+                                    throw new XPathException(ErrorCodes.FOJS0006, "Cannot convert '" + tempString + "' to a number.");
+                                }
                                 break;
                             case "string":
                                 if (elementValueIsEscaped == true) {

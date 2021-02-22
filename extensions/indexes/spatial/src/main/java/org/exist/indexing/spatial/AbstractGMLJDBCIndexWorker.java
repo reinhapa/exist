@@ -1,25 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2007 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
- *  $Id$
- *  
- *  @author <a href="mailto:pierrick.brihaye@free.fr">Pierrick Brihaye</a>
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.indexing.spatial;
 
@@ -82,6 +80,9 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.*;
 
+/**
+ * @author <a href="mailto:pierrick.brihaye@free.fr">Pierrick Brihaye</a>
+ */
 public abstract class AbstractGMLJDBCIndexWorker implements IndexWorker {
 
     public static final String GML_NS = "http://www.opengis.net/gml";
@@ -99,7 +100,7 @@ public abstract class AbstractGMLJDBCIndexWorker implements IndexWorker {
     protected ReindexMode currentMode = ReindexMode.UNKNOWN;
     protected DocumentImpl currentDoc = null;  
     private boolean isDocumentGMLAware = false;
-    protected Map<NodeId, SRSGeometry> geometries = new TreeMap<NodeId, SRSGeometry>();
+    protected Map<NodeId, SRSGeometry> geometries = new TreeMap<>();
     NodeId currentNodeId = null;
     Geometry streamedGeometry = null;
     boolean documentDeleted = false;
@@ -108,7 +109,7 @@ public abstract class AbstractGMLJDBCIndexWorker implements IndexWorker {
     protected GMLFilterGeometry geometryFilter = new GMLFilterGeometry(geometryHandler); 
     protected GMLFilterDocument geometryDocument = new GMLFilterDocument(geometryFilter);
     protected GMLStreamListener gmlStreamListener = new GMLStreamListener();
-    protected TreeMap<String, MathTransform> transformations = new TreeMap<String, MathTransform>();
+    protected TreeMap<String, MathTransform> transformations = new TreeMap<>();
     protected boolean useLenientMode = false;
     protected GeometryCoordinateSequenceTransformer coordinateTransformer = new GeometryCoordinateSequenceTransformer();
     protected GeometryTransformer gmlTransformer = new GeometryTransformer();
@@ -116,8 +117,6 @@ public abstract class AbstractGMLJDBCIndexWorker implements IndexWorker {
     protected WKBReader wkbReader = new WKBReader();
     protected WKTWriter wktWriter = new WKTWriter();
     protected WKTReader wktReader = new WKTReader();
-    protected Base64Encoder base64Encoder = new Base64Encoder();
-    protected Base64Decoder base64Decoder = new Base64Decoder();
 
     public AbstractGMLJDBCIndexWorker(AbstractGMLJDBCIndex index, DBBroker broker) {
         this.index = index;
@@ -147,10 +146,10 @@ public abstract class AbstractGMLJDBCIndexWorker implements IndexWorker {
         this.controller = controller;
         Map<String, GMLIndexConfig> map = null;
         for(int i = 0; i < configNodes.getLength(); i++) {
-            Node node = configNodes.item(i);
+            final Node node = configNodes.item(i);
             if (node.getNodeType() == Node.ELEMENT_NODE &&
                     INDEX_ELEMENT.equals(node.getLocalName())) { 
-                map = new TreeMap<String, GMLIndexConfig>();
+                map = new TreeMap<>();
                 GMLIndexConfig config = new GMLIndexConfig(namespaces, (Element)node);
                 map.put(AbstractGMLJDBCIndex.ID, config);
             }
@@ -165,7 +164,7 @@ public abstract class AbstractGMLJDBCIndexWorker implements IndexWorker {
         if (document != null) {
             IndexSpec idxConf = document.getCollection().getIndexConfiguration(getBroker());
             if (idxConf != null) {
-                Map collectionConfig = (Map) idxConf.getCustomIndexSpec(AbstractGMLJDBCIndex.ID);
+                final Map collectionConfig = (Map) idxConf.getCustomIndexSpec(AbstractGMLJDBCIndex.ID);
                 if (collectionConfig != null) {
                     isDocumentGMLAware = true;
                     if (collectionConfig.get(AbstractGMLJDBCIndex.ID) != null)
@@ -292,7 +291,7 @@ public abstract class AbstractGMLJDBCIndexWorker implements IndexWorker {
     }
 
     private void saveDocumentNodes(Connection conn) throws SQLException {
-        if (geometries.size() == 0)
+        if (geometries.isEmpty())
             return;
 
         PreparedStatement ps = conn.prepareStatement("INSERT INTO " + GMLHSQLIndex.TABLE_NAME + "(" +
@@ -478,9 +477,7 @@ public abstract class AbstractGMLJDBCIndexWorker implements IndexWorker {
         try {
             conn = acquireConnection();
             return getGeometricPropertyForNode(context, p, conn, propertyName);
-        } catch (SQLException e) {
-            throw new SpatialIndexException(e);
-        } catch (XPathException e) {
+        } catch (SQLException | XPathException e) {
             throw new SpatialIndexException(e);
         } finally {
             try {
@@ -499,9 +496,7 @@ public abstract class AbstractGMLJDBCIndexWorker implements IndexWorker {
         try {
             conn = acquireConnection();
             return getGeometricPropertyForNodes(context, contextSet, conn, propertyName);
-        } catch (SQLException e) {
-            throw new SpatialIndexException(e);
-        } catch (XPathException e) {
+        } catch (SQLException | XPathException e) {
             throw new SpatialIndexException(e);
         } finally {
             try {
@@ -519,10 +514,7 @@ public abstract class AbstractGMLJDBCIndexWorker implements IndexWorker {
         try {
             conn = acquireConnection();
             return checkIndex(broker, conn);
-        } catch (SQLException e) {
-            LOG.error(e);
-            return false;
-        } catch (SpatialIndexException e) {
+        } catch (final SQLException | SpatialIndexException e) {
             LOG.error(e);
             return false;
         } finally {
@@ -564,7 +556,7 @@ public abstract class AbstractGMLJDBCIndexWorker implements IndexWorker {
 
     public Occurrences[] scanIndex(XQueryContext context, DocumentSet docs, NodeSet contextSet, Map hints) {
         //TODO : try to use contextSet
-        Map<Geometry, Occurrences> occurences = new TreeMap<Geometry, Occurrences>();
+        Map<Geometry, Occurrences> occurences = new TreeMap<>();
         Connection conn = null;
         try {
             conn = acquireConnection();
@@ -680,8 +672,6 @@ public abstract class AbstractGMLJDBCIndexWorker implements IndexWorker {
                 }
                 transformations.put(sourceCRS + "_" + targetCRS, transform);
                 LOG.debug("Instantiated transformation from '" + sourceCRS + "' to '" + targetCRS + "'");
-            } catch (NoSuchAuthorityCodeException e) {
-                LOG.error(e);
             } catch (FactoryException e) {
                 LOG.error(e);
             }

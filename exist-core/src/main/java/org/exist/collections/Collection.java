@@ -1,3 +1,24 @@
+/*
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
+ *
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 package org.exist.collections;
 
 import org.exist.EXistException;
@@ -86,7 +107,10 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      * Get the metadata of the Collection
      *
      * @return The Collection metadata
+     *
+     * @deprecated Will be removed in eXist-db 6.0.0. Instead use the direct methods on this class.
      */
+    @Deprecated
     CollectionMetadata getMetadata();
 
     /**
@@ -117,18 +141,15 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      * Gets the creation timestamp of this Collection
      *
      * @return timestamp the creation timestamp in milliseconds
-     *
-     * @deprecated Use {@link #getMetadata()} {@link CollectionMetadata#getCreated()}
      */
-    @Deprecated
-    long getCreationTime();
+    long getCreated();
 
     /**
      * Sets the creation timestamp of this Collection
      *
      * @param timestamp the creation timestamp in milliseconds
      */
-    @EnsureContainerLocked(mode=WRITE_LOCK) void setCreationTime(long timestamp);
+    @EnsureContainerLocked(mode=WRITE_LOCK) void setCreated(long timestamp);
 
     /**
      * Get the Collection Configuration of this Collection
@@ -322,16 +343,6 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
      */
     CollectionEntry getResourceEntry(DBBroker broker, String name)
             throws PermissionDeniedException, LockException, IOException;
-
-    /**
-     * Update the specified child Collection
-     *
-     * @param broker The database broker
-     * @param child  The child Collection to update
-     * @throws PermissionDeniedException if user has not sufficient rights
-     * @throws LockException if broker is locked
-     */
-    void update(DBBroker broker, @EnsureLocked(mode=WRITE_LOCK) Collection child) throws PermissionDeniedException, LockException;
 
     /**
      * Add a document to the collection
@@ -1051,14 +1062,14 @@ public interface Collection extends Resource, Comparable<Collection>, AutoClosea
 
         public void read(final Collection collection) {
             setPermissions(collection.getPermissionsNoLock());
-            setCreated(collection.getCreationTime());
+            setCreated(collection.getCreated());
         }
     }
 
     class DocumentEntry extends CollectionEntry {
         public DocumentEntry(final DocumentImpl document) {
             super(document.getURI(), document.getPermissions());
-            setCreated(document.getMetadata().getCreated());
+            setCreated(document.getCreated());
         }
 
         @Override

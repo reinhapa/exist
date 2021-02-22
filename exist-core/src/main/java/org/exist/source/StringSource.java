@@ -1,36 +1,33 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-04 Wolfgang M. Meier
- *  wolfgang@exist-db.org
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- *  $Id$
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.source;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
 
-import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
 import org.exist.storage.DBBroker;
-import org.exist.util.io.FastByteArrayInputStream;
+import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -41,27 +38,21 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public class StringSource extends AbstractSource {
 
-    private String data;
+    private final String content;
     
-    public StringSource(String content) {
-        this.data = content;
+    public StringSource(final String content) {
+        super(hashKey(content));
+        this.content = content;
     }
 
     @Override
     public String path() {
-        return type();
+        return null;
     }
 
     @Override
     public String type() {
         return "String";
-    }
-
-    /* (non-Javadoc)
-             * @see org.exist.source.Source#getKey()
-             */
-    public Object getKey() {
-        return data;
     }
 
     @Override
@@ -74,26 +65,28 @@ public class StringSource extends AbstractSource {
         return Source.Validity.VALID;
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.source.Source#getReader()
-     */
-    public Reader getReader() throws IOException {
-        return new StringReader(data);
+    @Override
+    public Reader getReader() {
+        return new StringReader(content);
     }
 
-    public InputStream getInputStream() throws IOException {
-        return new FastByteArrayInputStream(data.getBytes(UTF_8));
+    @Override
+    public InputStream getInputStream() {
+        return new UnsynchronizedByteArrayInputStream(content.getBytes(UTF_8));
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.source.Source#getContent()
-     */
-    public String getContent() throws IOException {
-        return data;
+    @Override
+    public String getContent() {
+        return content;
     }
 
 	@Override
-	public void validate(Subject subject, int perm) throws PermissionDeniedException {
+	public void validate(final Subject subject, final int perm) {
 		// TODO protected?
 	}
+
+    @Override
+    public int hashCode() {
+        return content.hashCode();
+    }
 }

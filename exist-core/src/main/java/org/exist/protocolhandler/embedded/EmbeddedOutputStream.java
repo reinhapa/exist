@@ -1,23 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-07 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * $Id: EmbeddedOutputStream.java 223 2007-04-21 22:13:05Z dizzzz $
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 package org.exist.protocolhandler.embedded;
@@ -102,7 +102,7 @@ public class EmbeddedOutputStream extends OutputStream {
             // get a temporary file
             final TemporaryFileManager tempFileManager = TemporaryFileManager.getInstance();
             final Path tempFile = tempFileManager.getTemporaryFile();
-            final OutputStream osTemp = Files.newOutputStream(tempFile, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+            final OutputStream osTemp = new BufferedOutputStream(Files.newOutputStream(tempFile, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE));
 
             // upload the content of the temp file to the db when it is closed, then return the temp file
             final RunnableE<IOException> uploadOnClose = () -> {
@@ -150,7 +150,7 @@ public class EmbeddedOutputStream extends OutputStream {
                         final InputSource inputsource = new FileInputSource(tempFile);
                         final IndexInfo info = collection.validateXMLResource(txn, broker, documentUri, inputsource);
                         final DocumentImpl doc = info.getDocument();
-                        doc.getMetadata().setMimeType(contentType);
+                        doc.setMimeType(contentType);
                         collection.store(txn, broker, info, inputsource);
 
                     } else {

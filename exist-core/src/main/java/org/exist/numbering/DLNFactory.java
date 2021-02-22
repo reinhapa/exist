@@ -1,23 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-06 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- *  $Id$
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.numbering;
 
@@ -36,16 +36,16 @@ public class DLNFactory implements NodeIdFactory {
         return new DLN();
     }
 
-    public NodeId createInstance(int id) {
+    public NodeId createInstance(final int id) {
         return new DLN(id);
     }
     
-    public NodeId createFromStream(VariableByteInput is) throws IOException {
+    public NodeId createFromStream(final VariableByteInput is) throws IOException {
         final short bitCnt = is.readShort();
         return bitCnt == 0 ? NodeId.END_OF_DOCUMENT : new DLN(bitCnt, is);
     }
 
-    public NodeId createFromStream(NodeId previous, VariableByteInput is) throws IOException {
+    public NodeId createFromStream(final NodeId previous, final VariableByteInput is) throws IOException {
         //if (previous == null)
         //  return createFromStream(is);
         final byte prefix = is.readByte();
@@ -55,11 +55,11 @@ public class DLNFactory implements NodeIdFactory {
         return bitCnt == 0 ? NodeId.END_OF_DOCUMENT : new DLN(prefix, (DLN) previous, bitCnt, is);
     }
 
-    public NodeId createFromData(int sizeHint, byte[] data, int startOffset) {
+    public NodeId createFromData(final int sizeHint, final byte[] data, final int startOffset) {
         return new DLN(sizeHint, data, startOffset);
     }
 
-    public NodeId createFromString(String string) {
+    public NodeId createFromString(final String string) {
     	return new DLN(string);
     }
 
@@ -67,11 +67,11 @@ public class DLNFactory implements NodeIdFactory {
         return NodeId.DOCUMENT_NODE;
     }
 
-    public int lengthInBytes(int units, byte[] data, int startOffset) {
+    public int lengthInBytes(final int units, final byte[] data, final int startOffset) {
         return DLNBase.getLengthInBytes(units, data, startOffset);
     }
 
-    public void writeEndOfDocument(VariableByteOutputStream os) {
+    public void writeEndOfDocument(final VariableByteOutputStream os) {
         os.writeByte((byte) 0);
         os.writeShort(0);
     }

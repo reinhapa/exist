@@ -1,23 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2010-2011 The eXist Project
- *  http://exist-db.org
- *  
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
- *  
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
- *  
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *  
- *  $Id$
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
+ *
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.plugin;
 
@@ -26,6 +26,7 @@ import java.lang.invoke.LambdaMetafactory;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Function;
 
@@ -64,8 +65,11 @@ import static java.lang.invoke.MethodType.methodType;
  * It control search procedure, activation and de-actication (including runtime).
  *
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
+ *
+ * @deprecated Should no longer be used.
  */
 @ConfigurationClass("plugin-manager")
+@Deprecated
 public class PluginsManagerImpl implements Configurable, BrokerPoolService, PluginsManager, LifeCycle {
 
     private static final Logger LOG = LogManager.getLogger(PluginsManagerImpl.class);
@@ -183,8 +187,14 @@ public class PluginsManagerImpl implements Configurable, BrokerPoolService, Plug
         }
     }
 
+    @Override
+    @Deprecated
+    public void stop(final DBBroker broker) {
+	    stopSystem(broker);
+    }
+
 	@Override
-	public void stop(final DBBroker broker) {
+	public void stopSystem(final DBBroker broker) {
 		for (final Plug plugin : jacks.values()) {
 			try {
 				plugin.stop(broker);
@@ -245,7 +255,7 @@ public class PluginsManagerImpl implements Configurable, BrokerPoolService, Plug
         while (e.hasMoreElements()) {
             final URL url = e.nextElement();
             try (final InputStream is = url.openStream();
-                 final BufferedReader r = new BufferedReader(new InputStreamReader(is, "UTF-8"))) {
+                 final BufferedReader r = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = r.readLine()) != null) {
 

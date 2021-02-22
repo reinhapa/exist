@@ -1,26 +1,27 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2007-2013 The eXist-db Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * $Id$
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery.modules.compression;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.collections.Collection;
@@ -31,11 +32,10 @@ import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.lock.LockManager;
 import org.exist.storage.lock.ManagedDocumentLock;
 import org.exist.storage.serializers.Serializer;
-import org.exist.util.Base64Decoder;
 import org.exist.util.FileUtils;
 import org.exist.util.LockException;
-import org.exist.util.io.FastByteArrayInputStream;
-import org.exist.util.io.FastByteArrayOutputStream;
+import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
+import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
 import org.exist.xquery.value.*;
@@ -120,7 +120,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
                 encoding = StandardCharsets.UTF_8;
             }
 
-            try(final FastByteArrayOutputStream baos = new FastByteArrayOutputStream();
+            try(final UnsynchronizedByteArrayOutputStream baos = new UnsynchronizedByteArrayOutputStream();
                     OutputStream os = stream(baos, encoding)) {
 
                 // iterate through the argument sequence
@@ -141,7 +141,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
                     ((DeflaterOutputStream)os).finish();
                 }
 
-                return BinaryValueFromInputStream.getInstance(context, new Base64BinaryValueType(), new FastByteArrayInputStream(baos.toByteArray()));
+                return BinaryValueFromInputStream.getInstance(context, new Base64BinaryValueType(), new UnsynchronizedByteArrayInputStream(baos.toByteArray()));
             }
 		} catch (final UnsupportedCharsetException | IOException e) {
 			throw new XPathException(this, e.getMessage(), e);
@@ -273,7 +273,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
             final String stripOffset) throws XPathException {
 
         final String ns = element.getNamespaceURI();
-        if(!(element.getNodeName().equals("entry") || (ns != null && ns.length() > 0))) {
+        if(!(element.getNodeName().equals("entry") || (ns != null && !ns.isEmpty()))) {
             throw new XPathException(this, "Item must be type of xs:anyURI or element entry.");
         }
 
@@ -316,11 +316,9 @@ public abstract class AbstractCompressFunction extends BasicFunction
                 } else {
                     if(content.getNodeType() == Node.TEXT_NODE) {
                         String text = content.getNodeValue();
-                        Base64Decoder dec = new Base64Decoder();
                         if("binary".equals(type)) {
                             //base64 binary
-                            dec.translate(text);
-                            value = dec.getByteArray();
+                            value = Base64.decodeBase64(text);
                         } else {
                             //text
                             value = text.getBytes();
@@ -396,23 +394,23 @@ public abstract class AbstractCompressFunction extends BasicFunction
 		}
 
         final byte[] value;
-		if (doc.getResourceType() == DocumentImpl.XML_FILE) {
-			// xml file
-			Serializer serializer = context.getBroker().getSerializer();
-			serializer.setUser(context.getSubject());
-			serializer.setProperty("omit-xml-declaration", "no");
+        if (doc.getResourceType() == DocumentImpl.XML_FILE) {
+            // xml file
+            Serializer serializer = context.getBroker().getSerializer();
+            serializer.setUser(context.getSubject());
+            serializer.setProperty("omit-xml-declaration", "no");
             getDynamicSerializerOptions(serializer);
             String strDoc = serializer.serialize(doc);
-            value = strDoc.getBytes();            
-		} else if (doc.getResourceType() == DocumentImpl.BINARY_FILE) {
-			// binary file
-            try (final InputStream is = context.getBroker().getBinaryResource((BinaryDocument)doc);
-                 final FastByteArrayOutputStream baos = new FastByteArrayOutputStream(doc.getContentLength() == -1 ? 1024 : (int)doc.getContentLength())) {
+            value = strDoc.getBytes();
+        } else if (doc.getResourceType() == DocumentImpl.BINARY_FILE && doc.getContentLength() > 0) {
+            // binary file
+            try (final InputStream is = context.getBroker().getBinaryResource((BinaryDocument) doc);
+                 final UnsynchronizedByteArrayOutputStream baos = new UnsynchronizedByteArrayOutputStream(doc.getContentLength() == -1 ? 1024 : (int) doc.getContentLength())) {
                 baos.write(is);
                 value = baos.toByteArray();
             }
-		} else {
-		    value = new byte[0];
+        } else {
+            value = new byte[0];
         }
 
 		// close the entry
@@ -464,7 +462,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
 		}
 	}
 	
-	protected abstract OutputStream stream(FastByteArrayOutputStream baos, Charset encoding);
+	protected abstract OutputStream stream(UnsynchronizedByteArrayOutputStream baos, Charset encoding);
 	
 	protected abstract Object newEntry(String name);
 	

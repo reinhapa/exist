@@ -1,32 +1,31 @@
 /*
- *  eXist Mail Module Extension SendEmailFunction
- *  Copyright (C) 2006-09 Adam Retter <adam@exist-db.org>
- *  www.exist-db.org
- *  
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software Foundation
- *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *  
- *  $Id$
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.xquery.modules.mail;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.dom.QName;
-import org.exist.util.Base64Encoder;
 import org.exist.util.MimeTable;
 import org.exist.xquery.*;
 import org.exist.xquery.functions.system.GetVersion;
@@ -140,16 +139,13 @@ public class SendEmailFunction extends BasicFunction
 	    		String proto = session.getProperty("mail.transport.protocol");
 			if(proto==null)
 				proto = "smtp";
-			Transport t = session.getTransport(proto);
-			try {
-				if(session.getProperty("mail."+proto+".auth")!=null)
-					t.connect(session.getProperty("mail."+proto+".user"),session.getProperty("mail."+proto+".password"));
-				for(Message msg: messages) {
-					t.sendMessage(msg,msg.getAllRecipients());
-				}
-			} finally {
-				t.close();
-			}
+            try (Transport t = session.getTransport(proto)) {
+                if (session.getProperty("mail." + proto + ".auth") != null)
+                    t.connect(session.getProperty("mail." + proto + ".user"), session.getProperty("mail." + proto + ".password"));
+                for (Message msg : messages) {
+                    t.sendMessage(msg, msg.getAllRecipients());
+                }
+            }
 			
 			return( Sequence.EMPTY_SEQUENCE );
 		} catch(TransformerException te) {
@@ -538,7 +534,7 @@ public class SendEmailFunction extends BasicFunction
             // we have an attachment as well as text and/or html so we need a multipart/mixed message
             multipartBoundary =  MultipartBoundary;
         }
-        else if(!aMail.getText().equals("") && !aMail.getXHTML().equals(""))
+        else if(!aMail.getText().isEmpty() && !aMail.getXHTML().isEmpty())
         {
             // we have text and html so we need a multipart/alternative message and no attachment
             multipartAlternative = true;
@@ -564,14 +560,14 @@ public class SendEmailFunction extends BasicFunction
         }
 
         // TODO - need to put out a multipart/mixed boundary here when HTML, text and attachment present
-        if(!aMail.getText().equals("") && !aMail.getXHTML().equals("") && aMail.attachmentIterator().hasNext())
+        if(!aMail.getText().isEmpty() && !aMail.getXHTML().isEmpty() && aMail.attachmentIterator().hasNext())
         {
             out.println("Content-Type: multipart/alternative; boundary=\"" + MultipartBoundary + "_alt\";");
             out.println("--" + MultipartBoundary + "_alt");
         }
 
         //text email
-        if(!aMail.getText().equals(""))
+        if(!aMail.getText().isEmpty())
         {
             out.println("Content-Type: text/plain; charset=" + charset);
             out.println("Content-Transfer-Encoding: 8bit");
@@ -582,9 +578,9 @@ public class SendEmailFunction extends BasicFunction
 
             if(multipartBoundary != null)
             {
-                if(!aMail.getXHTML().equals("") || aMail.attachmentIterator().hasNext())
+                if(!aMail.getXHTML().isEmpty() || aMail.attachmentIterator().hasNext())
                 {
-                    if(!aMail.getText().equals("") && !aMail.getXHTML().equals("") && aMail.attachmentIterator().hasNext())
+                    if(!aMail.getText().isEmpty() && !aMail.getXHTML().isEmpty() && aMail.attachmentIterator().hasNext())
                     {
                         out.println("--" + MultipartBoundary + "_alt");
                     }
@@ -595,7 +591,7 @@ public class SendEmailFunction extends BasicFunction
                 }
                 else
                 {
-                    if(!aMail.getText().equals("") && !aMail.getXHTML().equals("") && aMail.attachmentIterator().hasNext())
+                    if(!aMail.getText().isEmpty() && !aMail.getXHTML().isEmpty() && aMail.attachmentIterator().hasNext())
                     {
                         out.println("--" + MultipartBoundary + "_alt--");
                     }
@@ -608,7 +604,7 @@ public class SendEmailFunction extends BasicFunction
         }
 
         //HTML email
-        if(!aMail.getXHTML().equals(""))
+        if(!aMail.getXHTML().isEmpty())
         {
                 out.println("Content-Type: text/html; charset=" + charset);
                 out.println("Content-Transfer-Encoding: 8bit");
@@ -622,7 +618,7 @@ public class SendEmailFunction extends BasicFunction
                 {
                     if(aMail.attachmentIterator().hasNext())
                     {
-                        if(!aMail.getText().equals("") && !aMail.getXHTML().equals("") && aMail.attachmentIterator().hasNext())
+                        if(!aMail.getText().isEmpty() && !aMail.getXHTML().isEmpty() && aMail.attachmentIterator().hasNext())
                         {
                             out.println("--" + MultipartBoundary + "_alt--");
                             out.println("--" + multipartBoundary);
@@ -634,7 +630,7 @@ public class SendEmailFunction extends BasicFunction
                     }
                     else
                     {
-                        if(!aMail.getText().equals("") && !aMail.getXHTML().equals("") && aMail.attachmentIterator().hasNext())
+                        if(!aMail.getText().isEmpty() && !aMail.getXHTML().isEmpty() && aMail.attachmentIterator().hasNext())
                         {
                             out.println("--" + MultipartBoundary + "_alt--");
                         }
@@ -897,30 +893,34 @@ public class SendEmailFunction extends BasicFunction
                                     Element elementBodyPart = (Element) bodyPart;
                                     String content = null;
                                     String contentType = null;
-                                    
-                                    if (bodyPart.getLocalName().equals("text")) {
-                                        // Setting the Subject and Content Type
-                                        content = bodyPart.getFirstChild().getNodeValue();
-                                        contentType = "plain";
-                                    } else if (bodyPart.getLocalName().equals("xhtml")) {
-                                        //Convert everything inside <xhtml></xhtml> to text
-                                        TransformerFactory transFactory = TransformerFactory.newInstance();
-                                        Transformer transformer = transFactory.newTransformer();
-                                        DOMSource source = new DOMSource(bodyPart.getFirstChild());
-                                        StringWriter strWriter = new StringWriter();
-                                        StreamResult result = new StreamResult(strWriter);
-                                        transformer.transform(source, result);
-                                        
-                                        content = strWriter.toString();
-                                        contentType = "html";
-                                    } else if (bodyPart.getLocalName().equals("generic")) {
-                                        // Setting the Subject and Content Type
-                                        content = elementBodyPart.getFirstChild().getNodeValue();
-                                        contentType = elementBodyPart.getAttribute("type");
+
+                                    switch (bodyPart.getLocalName()) {
+                                        case "text":
+                                            // Setting the Subject and Content Type
+                                            content = bodyPart.getFirstChild().getNodeValue();
+                                            contentType = "plain";
+                                            break;
+                                        case "xhtml":
+                                            //Convert everything inside <xhtml></xhtml> to text
+                                            TransformerFactory transFactory = TransformerFactory.newInstance();
+                                            Transformer transformer = transFactory.newTransformer();
+                                            DOMSource source = new DOMSource(bodyPart.getFirstChild());
+                                            StringWriter strWriter = new StringWriter();
+                                            StreamResult result = new StreamResult(strWriter);
+                                            transformer.transform(source, result);
+
+                                            content = strWriter.toString();
+                                            contentType = "html";
+                                            break;
+                                        case "generic":
+                                            // Setting the Subject and Content Type
+                                            content = elementBodyPart.getFirstChild().getNodeValue();
+                                            contentType = elementBodyPart.getAttribute("type");
+                                            break;
                                     }
                                     
                                     // Now, time to store it
-                                    if (content != null && contentType != null && contentType.length() > 0) {
+                                    if (content != null && contentType != null && !contentType.isEmpty()) {
                                         String charset = elementBodyPart.getAttribute("charset");
                                         String encoding = elementBodyPart.getAttribute("encoding");
                                         
@@ -996,7 +996,7 @@ public class SendEmailFunction extends BasicFunction
                     msg.setFrom();
 
                 // Preparing content and attachments
-                if (attachments.size() > 0) {
+                if (!attachments.isEmpty()) {
                     if (multibody == null) {
                         multibody = new MimeMultipart("mixed");
                         if (body != null) {
@@ -1212,10 +1212,7 @@ public class SendEmailFunction extends BasicFunction
      */
     private String encode64 (String str) throws java.io.UnsupportedEncodingException
     {
-        Base64Encoder enc = new Base64Encoder();
-        enc.translate(str.getBytes(charset));
-        String result = new String(enc.getCharArray());
-
+        String result = Base64.encodeBase64String(str.getBytes(charset));
         result = result.replaceAll("\n","?=\n =?" + charset + "?B?");
         result = "=?" + charset + "?B?" + result + "?=";
         return(result);

@@ -1,3 +1,24 @@
+/*
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
+ *
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 package org.exist.xquery.value;
 
 import com.ibm.icu.text.Collator;
@@ -5,6 +26,9 @@ import org.exist.xquery.Constants;
 import org.exist.xquery.Constants.Comparison;
 import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.XPathException;
+
+import javax.annotation.Nullable;
+import java.util.function.IntSupplier;
 
 public abstract class NumericValue extends ComputableValue {
 
@@ -41,57 +65,82 @@ public abstract class NumericValue extends ComputableValue {
     }
 
     @Override
-    public boolean compareTo(final Collator collator, final Comparison operator, final AtomicValue other)
+    public final boolean compareTo(final Collator collator, final Comparison operator, final AtomicValue other)
             throws XPathException {
         if (other.isEmpty()) {
             //Never equal, or inequal...
             return false;
         }
-        if (Type.subTypeOf(other.getType(), Type.NUMBER)) {
-            if (isNaN()) {
-                //NaN does not equal itself.
-                if (((NumericValue) other).isNaN()) {
-                    return operator == Comparison.NEQ;
-                }
+
+        if (Type.subTypeOfUnion(other.getType(), Type.NUMBER)) {
+            if (isNaN() || ((NumericValue) other).isNaN()) {
+                // left or right is NaN
+
+                // NaN never equals NaN or any other value
+                return operator == Comparison.NEQ;
             }
-            final double otherVal = ((NumericValue) other).getDouble();
-            final double val = getDouble();
+
+            final IntSupplier comparison = createComparisonWith((NumericValue) other);
+            if (comparison == null) {
+                throw new XPathException(ErrorCodes.XPTY0004, "Type error: cannot apply operator to numeric value");
+            }
+
             switch (operator) {
                 case EQ:
-                    return val == otherVal;
+                    return comparison.getAsInt() == 0;
                 case NEQ:
-                    return val != otherVal;
+                    return comparison.getAsInt() != 0;
                 case GT:
-                    return val > otherVal;
+                    return comparison.getAsInt() > 0;
                 case GTEQ:
-                    return val >= otherVal;
+                    return comparison.getAsInt() >= 0;
                 case LT:
-                    return val < otherVal;
+                    return comparison.getAsInt() < 0;
                 case LTEQ:
-                    return val <= otherVal;
+                    return comparison.getAsInt() <= 0;
                 default:
-                    throw new XPathException("Type error: cannot apply operator to numeric value");
+                    throw new XPathException(ErrorCodes.XPTY0004, "Type error: cannot apply operator to numeric value");
             }
         }
+
         throw new XPathException(ErrorCodes.XPTY0004, "Type error: cannot compare operands: " +
                 Type.getTypeName(getType()) + " and " +
                 Type.getTypeName(other.getType()));
     }
 
+    /**
+     * Creates a function which when called performs a comparison between this NumericValue
+     * and the {@code other} NumericValue.
+     *
+     * @param other the other numberic value to compare this against.
+     *
+     * @return the comparison function or null.
+     */
+    protected abstract @Nullable IntSupplier createComparisonWith(final NumericValue other);
+
     @Override
-    public int compareTo(final Collator collator, final AtomicValue other) throws XPathException {
-        if (Type.subTypeOf(other.getType(), Type.NUMBER)) {
+    public final int compareTo(final Collator collator, final AtomicValue other) throws XPathException {
+        if (other.isEmpty()) {
+            //Never equal, or inequal...
+            return Constants.INFERIOR;
+        }
+
+        if (Type.subTypeOfUnion(other.getType(), Type.NUMBER)) {
             if (isNaN()) {
                 //NaN does not equal itself.
                 if (((NumericValue) other).isNaN()) {
                     return Constants.INFERIOR;
                 }
             }
-            final double otherVal = ((NumericValue) other).getDouble();
-            final double val = getDouble();
-            return Double.compare(val, otherVal);
+
+            final IntSupplier comparison = createComparisonWith((NumericValue) other);
+            if (comparison == null) {
+                throw new XPathException(ErrorCodes.XPTY0004, "Type error: cannot apply operator to numeric value");
+            }
+
+            return comparison.getAsInt();
         } else {
-            throw new XPathException("cannot compare numeric value to non-numeric value");
+            throw new XPathException(ErrorCodes.XPTY0004, "cannot compare numeric value to non-numeric value");
         }
     }
 

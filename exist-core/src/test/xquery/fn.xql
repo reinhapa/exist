@@ -1,3 +1,24 @@
+(:
+ : eXist-db Open Source Native XML Database
+ : Copyright (C) 2001 The eXist-db Authors
+ :
+ : info@exist-db.org
+ : http://www.exist-db.org
+ :
+ : This library is free software; you can redistribute it and/or
+ : modify it under the terms of the GNU Lesser General Public
+ : License as published by the Free Software Foundation; either
+ : version 2.1 of the License, or (at your option) any later version.
+ :
+ : This library is distributed in the hope that it will be useful,
+ : but WITHOUT ANY WARRANTY; without even the implied warranty of
+ : MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ : Lesser General Public License for more details.
+ :
+ : You should have received a copy of the GNU Lesser General Public
+ : License along with this library; if not, write to the Free Software
+ : Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ :)
 xquery version "3.1";
 
 (:~
@@ -27,7 +48,7 @@ function fnt:cleanup() {
     xmldb:remove("/db/fn-test")
 };
 
-declare 
+declare
     %test:args("NFC")
     %test:assertEquals(6, 6)
     %test:args("NFD")
@@ -105,3 +126,52 @@ function fnt:tokenize-onearg($str as xs:string) {
      tokenize($str)
 };
 
+declare
+    %test:assertError("err:XPDY0002")
+function fnt:document-uri0_noarg() {
+     document-uri()
+};
+
+declare
+    %test:assertError("err:XPDY0002")
+function fnt:document-uri0() {
+     document-uri(.)
+};
+
+declare
+    %test:assertEquals("/db/fn-test/test.xml")
+function fnt:document-uri0_context() {
+     root(collection('/db/fn-test')//book)/document-uri()
+};
+
+declare
+    %test:assertError("err:XPDY0002")
+function fnt:document-uri0_context_empty() {
+     root(collection('/db/fn-test')//bookies)/document-uri()
+};
+
+declare
+    %test:assertEquals("/db/fn-test/test.xml")
+function fnt:document-uri1() {
+     document-uri(root(collection('/db/fn-test')//book))
+};
+
+declare
+    %test:assertEmpty
+function fnt:document-uri1_empty() {
+     document-uri(root(collection('/db/fn-test')//bookies))
+};
+
+declare
+    %test:assertTrue
+function fnt:fn-document-uri-32() {
+     let $uri := "/db/fn-test/test.xml"
+     return
+         fn:contains(fn:doc($uri)/document-uri(), $uri)
+};
+
+declare
+    %test:assertError("err:XPTY0004")
+function fnt:document-uri0_no_node_context() {
+     util:eval-with-context("document-uri()", (), false(), "a")
+};

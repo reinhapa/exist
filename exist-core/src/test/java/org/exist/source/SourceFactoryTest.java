@@ -1,13 +1,32 @@
+/*
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
+ *
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 package org.exist.source;
 
 
 import com.googlecode.junittoolbox.ParallelRunner;
 import org.exist.dom.persistent.BinaryDocument;
-import org.exist.dom.persistent.DocumentMetadata;
 import org.exist.dom.persistent.LockedDocument;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.DBBroker;
-import org.exist.storage.lock.Lock;
 import org.exist.xmldb.XmldbURI;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,7 +52,7 @@ public class SourceFactoryTest {
         final Source source = SourceFactory.getSource(null, contextPath, location, false);
 
         assertTrue(source instanceof FileSource);
-        assertEquals(new java.io.File(libraryUrl.toURI()).getAbsolutePath(), source.getKey());
+        assertEquals(new java.io.File(libraryUrl.toURI()).getAbsolutePath(), source.path());
     }
 
     @Test
@@ -46,7 +65,7 @@ public class SourceFactoryTest {
         final Source source = SourceFactory.getSource(null, contextPath, location, false);
 
         assertTrue(source instanceof FileSource);
-        assertEquals(new java.io.File(libraryUrl.toURI()).getAbsolutePath(), source.getKey());
+        assertEquals(new java.io.File(libraryUrl.toURI()).getAbsolutePath(), source.path());
     }
 
     @Test
@@ -58,7 +77,7 @@ public class SourceFactoryTest {
         final Source source = SourceFactory.getSource(null, contextPath, location, false);
 
         assertTrue(source instanceof FileSource);
-        assertEquals(new java.io.File(getClass().getResource("library.xqm").toURI()).getAbsolutePath(), source.getKey());
+        assertEquals(new java.io.File(getClass().getResource("library.xqm").toURI()).getAbsolutePath(), source.path());
     }
 
     @Test
@@ -70,7 +89,7 @@ public class SourceFactoryTest {
         final Source source = SourceFactory.getSource(null, contextPath, location, false);
 
         assertTrue(source instanceof FileSource);
-        assertEquals(new java.io.File(getClass().getResource("library.xqm").toURI()).getAbsolutePath(), source.getKey());
+        assertEquals(new java.io.File(getClass().getResource("library.xqm").toURI()).getAbsolutePath(), source.path());
     }
 
     @Test
@@ -83,7 +102,7 @@ public class SourceFactoryTest {
         final Source source = SourceFactory.getSource(null, contextPath, location, false);
 
         assertTrue(source instanceof FileSource);
-        assertEquals(Paths.get(getClass().getResource("library.xqm").toURI()).toString(), source.getKey());
+        assertEquals(Paths.get(getClass().getResource("library.xqm").toURI()).toString(), source.path());
     }
 
     @Test
@@ -94,7 +113,7 @@ public class SourceFactoryTest {
         final Source source = SourceFactory.getSource(null, contextPath, location, false);
 
         assertTrue(source instanceof ClassLoaderSource);
-        assertEquals(getClass().getResource("library.xqm"), source.getKey());
+        assertEquals(getClass().getResource("library.xqm").getFile(), source.path());
     }
 
     @Test
@@ -105,7 +124,7 @@ public class SourceFactoryTest {
         final Source source = SourceFactory.getSource(null, contextPath, location, false);
 
         assertTrue(source instanceof ClassLoaderSource);
-        assertEquals(getClass().getResource("library.xqm"), source.getKey());
+        assertEquals(getClass().getResource("library.xqm").getFile(), source.path());
     }
 
     @Test
@@ -116,7 +135,7 @@ public class SourceFactoryTest {
         final Source source = SourceFactory.getSource(null, contextPath, location, false);
 
         assertTrue(source instanceof ClassLoaderSource);
-        assertEquals(getClass().getResource("library.xqm"), source.getKey());
+        assertEquals(getClass().getResource("library.xqm").getFile(), source.path());
     }
 
     @Test
@@ -130,7 +149,7 @@ public class SourceFactoryTest {
         final Source relativeSource = SourceFactory.getSource(null, ((ClassLoaderSource)mainSource).getSource(), location, false);
 
         assertTrue(relativeSource instanceof ClassLoaderSource);
-        assertEquals(getClass().getResource(location), relativeSource.getKey());
+        assertEquals(getClass().getResource(location).getFile(), relativeSource.path());
     }
 
     @Test
@@ -141,7 +160,7 @@ public class SourceFactoryTest {
         final Source source = SourceFactory.getSource(null, contextPath, location, false);
 
         assertTrue(source instanceof ClassLoaderSource);
-        assertEquals(getClass().getResource("library.xqm"), source.getKey());
+        assertEquals(getClass().getResource("library.xqm").getFile(), source.path());
     }
 
     @Test
@@ -152,7 +171,7 @@ public class SourceFactoryTest {
         final Source source = SourceFactory.getSource(null, contextPath, location, false);
 
         assertTrue(source instanceof ClassLoaderSource);
-        assertEquals(getClass().getResource("library.xqm"), source.getKey());
+        assertEquals(getClass().getResource("library.xqm").getFile(), source.path());
     }
 
     @Test
@@ -163,7 +182,7 @@ public class SourceFactoryTest {
         final Source source = SourceFactory.getSource(null, contextPath, location, false);
 
         assertTrue(source instanceof ClassLoaderSource);
-        assertEquals(getClass().getResource("library.xqm"), source.getKey());
+        assertEquals(getClass().getResource("library.xqm").getFile(), source.path());
     }
 
     @Test
@@ -177,7 +196,7 @@ public class SourceFactoryTest {
         final Source relativeSource = SourceFactory.getSource(null, ((ClassLoaderSource)mainSource).getSource(), location, false);
 
         assertTrue(relativeSource instanceof ClassLoaderSource);
-        assertEquals(getClass().getResource(location), relativeSource.getKey());
+        assertEquals(getClass().getResource(location).getFile(), relativeSource.path());
     }
 
     @Test
@@ -188,22 +207,20 @@ public class SourceFactoryTest {
         final DBBroker mockBroker = createMock(DBBroker.class);
         final LockedDocument mockLockedDoc = createMock(LockedDocument.class);
         final BinaryDocument mockBinDoc = createMock(BinaryDocument.class);
-        final DocumentMetadata mockDocMetadata = createMock(DocumentMetadata.class);
         expect(mockBroker.getXMLResource(anyObject(), anyObject())).andReturn(mockLockedDoc);
         expect(mockLockedDoc.getDocument()).andReturn(mockBinDoc);
         expect(mockBinDoc.getResourceType()).andReturn(BinaryDocument.BINARY_FILE);
-        expect(mockBinDoc.getURI()).andReturn(XmldbURI.create(location));
-        expect(mockBinDoc.getMetadata()).andReturn(mockDocMetadata);
-        expect(mockDocMetadata.getLastModified()).andReturn(123456789l);
+        expect(mockBinDoc.getURI()).andReturn(XmldbURI.create(location)).times(2);
+        expect(mockBinDoc.getLastModified()).andReturn(123456789l);
         /*expect*/ mockLockedDoc.close();
 
-        replay(mockBroker, mockLockedDoc, mockBinDoc, mockDocMetadata);
+        replay(mockBroker, mockLockedDoc, mockBinDoc);
 
         final Source libSource = SourceFactory.getSource(mockBroker, contextPath, location, false);
         assertTrue(libSource instanceof DBSource);
-        assertEquals(XmldbURI.create(location), libSource.getKey());
+        assertEquals(XmldbURI.create(location), ((DBSource)libSource).getDocumentPath());
 
-        verify(mockBroker, mockLockedDoc, mockBinDoc, mockDocMetadata);
+        verify(mockBroker, mockLockedDoc, mockBinDoc);
     }
 
     @Test
@@ -214,22 +231,20 @@ public class SourceFactoryTest {
         final DBBroker mockBroker = createMock(DBBroker.class);
         final LockedDocument mockLockedDoc = createMock(LockedDocument.class);
         final BinaryDocument mockBinDoc = createMock(BinaryDocument.class);
-        final DocumentMetadata mockDocMetadata = createMock(DocumentMetadata.class);
         expect(mockBroker.getXMLResource(anyObject(), anyObject())).andReturn(mockLockedDoc);
         expect(mockLockedDoc.getDocument()).andReturn(mockBinDoc);
         expect(mockBinDoc.getResourceType()).andReturn(BinaryDocument.BINARY_FILE);
-        expect(mockBinDoc.getURI()).andReturn(XmldbURI.create(contextPath).append(location));
-        expect(mockBinDoc.getMetadata()).andReturn(mockDocMetadata);
-        expect(mockDocMetadata.getLastModified()).andReturn(123456789l);
+        expect(mockBinDoc.getURI()).andReturn(XmldbURI.create(contextPath).append(location)).times(2);
+        expect(mockBinDoc.getLastModified()).andReturn(123456789l);
         /*expect*/ mockLockedDoc.close();
 
-        replay(mockBroker, mockLockedDoc, mockBinDoc, mockDocMetadata);
+        replay(mockBroker, mockLockedDoc, mockBinDoc);
 
         final Source libSource = SourceFactory.getSource(mockBroker, contextPath, location, false);
         assertTrue(libSource instanceof DBSource);
-        assertEquals(XmldbURI.create(contextPath).append(location), libSource.getKey());
+        assertEquals(XmldbURI.create(contextPath).append(location), ((DBSource)libSource).getDocumentPath());
 
-        verify(mockBroker, mockLockedDoc, mockBinDoc, mockDocMetadata);
+        verify(mockBroker, mockLockedDoc, mockBinDoc);
     }
 
     @Test
@@ -272,22 +287,20 @@ public class SourceFactoryTest {
         final DBBroker mockBroker = createMock(DBBroker.class);
         final LockedDocument mockLockedDoc = createMock(LockedDocument.class);
         final BinaryDocument mockBinDoc = createMock(BinaryDocument.class);
-        final DocumentMetadata mockDocMetadata = createMock(DocumentMetadata.class);
         expect(mockBroker.getXMLResource(anyObject(), anyObject())).andReturn(mockLockedDoc);
         expect(mockLockedDoc.getDocument()).andReturn(mockBinDoc);
         expect(mockBinDoc.getResourceType()).andReturn(BinaryDocument.BINARY_FILE);
-        expect(mockBinDoc.getURI()).andReturn(XmldbURI.create(location));
-        expect(mockBinDoc.getMetadata()).andReturn(mockDocMetadata);
-        expect(mockDocMetadata.getLastModified()).andReturn(123456789l);
+        expect(mockBinDoc.getURI()).andReturn(XmldbURI.create(location)).times(2);
+        expect(mockBinDoc.getLastModified()).andReturn(123456789l);
         /*expect*/ mockLockedDoc.close();
 
-        replay(mockBroker, mockLockedDoc, mockBinDoc, mockDocMetadata);
+        replay(mockBroker, mockLockedDoc, mockBinDoc);
 
         final Source libSource = SourceFactory.getSource(mockBroker, contextPath, location, false);
         assertTrue(libSource instanceof DBSource);
-        assertEquals(XmldbURI.create(location), libSource.getKey());
+        assertEquals(XmldbURI.create(location), ((DBSource)libSource).getDocumentPath());
 
-        verify(mockBroker, mockLockedDoc, mockBinDoc, mockDocMetadata);
+        verify(mockBroker, mockLockedDoc, mockBinDoc);
     }
 
     @Test
@@ -298,22 +311,20 @@ public class SourceFactoryTest {
         final DBBroker mockBroker = createMock(DBBroker.class);
         final LockedDocument mockLockedDoc = createMock(LockedDocument.class);
         final BinaryDocument mockBinDoc = createMock(BinaryDocument.class);
-        final DocumentMetadata mockDocMetadata = createMock(DocumentMetadata.class);
         expect(mockBroker.getXMLResource(anyObject(), anyObject())).andReturn(mockLockedDoc);
         expect(mockLockedDoc.getDocument()).andReturn(mockBinDoc);
         expect(mockBinDoc.getResourceType()).andReturn(BinaryDocument.BINARY_FILE);
-        expect(mockBinDoc.getURI()).andReturn(XmldbURI.create(contextPath).append(location));
-        expect(mockBinDoc.getMetadata()).andReturn(mockDocMetadata);
-        expect(mockDocMetadata.getLastModified()).andReturn(123456789l);
+        expect(mockBinDoc.getURI()).andReturn(XmldbURI.create(contextPath).append(location)).times(2);
+        expect(mockBinDoc.getLastModified()).andReturn(123456789l);
         /*expect*/ mockLockedDoc.close();
 
-        replay(mockBroker, mockLockedDoc, mockBinDoc, mockDocMetadata);
+        replay(mockBroker, mockLockedDoc, mockBinDoc);
 
         final Source libSource = SourceFactory.getSource(mockBroker, contextPath, location, false);
         assertTrue(libSource instanceof DBSource);
-        assertEquals(XmldbURI.create(contextPath).append(location), libSource.getKey());
+        assertEquals(XmldbURI.create(contextPath).append(location), ((DBSource)libSource).getDocumentPath());
 
-        verify(mockBroker, mockLockedDoc, mockBinDoc, mockDocMetadata);
+        verify(mockBroker, mockLockedDoc, mockBinDoc);
     }
 
     @Test
@@ -356,22 +367,20 @@ public class SourceFactoryTest {
         final DBBroker mockBroker = createMock(DBBroker.class);
         final LockedDocument mockLockedDoc = createMock(LockedDocument.class);
         final BinaryDocument mockBinDoc = createMock(BinaryDocument.class);
-        final DocumentMetadata mockDocMetadata = createMock(DocumentMetadata.class);
         expect(mockBroker.getXMLResource(anyObject(), anyObject())).andReturn(mockLockedDoc);
         expect(mockLockedDoc.getDocument()).andReturn(mockBinDoc);
         expect(mockBinDoc.getResourceType()).andReturn(BinaryDocument.BINARY_FILE);
-        expect(mockBinDoc.getURI()).andReturn(XmldbURI.create(contextPath).append(location));
-        expect(mockBinDoc.getMetadata()).andReturn(mockDocMetadata);
-        expect(mockDocMetadata.getLastModified()).andReturn(123456789l);
+        expect(mockBinDoc.getURI()).andReturn(XmldbURI.create(contextPath).append(location)).times(2);
+        expect(mockBinDoc.getLastModified()).andReturn(123456789l);
         /*expect*/ mockLockedDoc.close();
 
-        replay(mockBroker, mockLockedDoc, mockBinDoc, mockDocMetadata);
+        replay(mockBroker, mockLockedDoc, mockBinDoc);
 
         final Source libSource = SourceFactory.getSource(mockBroker, contextPath, location, false);
         assertTrue(libSource instanceof DBSource);
-        assertEquals(XmldbURI.create(contextPath).append(location), libSource.getKey());
+        assertEquals(XmldbURI.create(contextPath).append(location), ((DBSource)libSource).getDocumentPath());
 
-        verify(mockBroker, mockLockedDoc, mockBinDoc, mockDocMetadata);
+        verify(mockBroker, mockLockedDoc, mockBinDoc);
     }
 
     @Test
@@ -382,22 +391,20 @@ public class SourceFactoryTest {
         final DBBroker mockBroker = createMock(DBBroker.class);
         final LockedDocument mockLockedDoc = createMock(LockedDocument.class);
         final BinaryDocument mockBinDoc = createMock(BinaryDocument.class);
-        final DocumentMetadata mockDocMetadata = createMock(DocumentMetadata.class);
         expect(mockBroker.getXMLResource(anyObject(), anyObject())).andReturn(mockLockedDoc);
         expect(mockLockedDoc.getDocument()).andReturn(mockBinDoc);
         expect(mockBinDoc.getResourceType()).andReturn(BinaryDocument.BINARY_FILE);
-        expect(mockBinDoc.getURI()).andReturn(XmldbURI.create(location));
-        expect(mockBinDoc.getMetadata()).andReturn(mockDocMetadata);
-        expect(mockDocMetadata.getLastModified()).andReturn(123456789l);
+        expect(mockBinDoc.getURI()).andReturn(XmldbURI.create(location)).times(2);
+        expect(mockBinDoc.getLastModified()).andReturn(123456789l);
         /*expect*/ mockLockedDoc.close();
 
-        replay(mockBroker, mockLockedDoc, mockBinDoc, mockDocMetadata);
+        replay(mockBroker, mockLockedDoc, mockBinDoc);
 
         final Source libSource = SourceFactory.getSource(mockBroker, contextPath, location, false);
         assertTrue(libSource instanceof DBSource);
-        assertEquals(XmldbURI.create(location), libSource.getKey());
+        assertEquals(XmldbURI.create(location), ((DBSource)libSource).getDocumentPath());
 
-        verify(mockBroker, mockLockedDoc, mockBinDoc, mockDocMetadata);
+        verify(mockBroker, mockLockedDoc, mockBinDoc);
     }
 
     @Test

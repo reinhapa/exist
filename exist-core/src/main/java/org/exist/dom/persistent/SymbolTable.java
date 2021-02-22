@@ -1,23 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2010-2014 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- *  $Id$
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.dom.persistent;
 
@@ -42,7 +42,6 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Iterator;
 
 /**
  * Maintains a global symbol table shared by a database instance. The symbol
@@ -112,7 +111,7 @@ public class SymbolTable implements BrokerPoolService, Closeable {
      * the underlying symbols.dbx file
      */
     private Path file;
-    private final VariableByteOutputStream outBuffer = new VariableByteOutputStream(512);
+    private final VariableByteOutputStream outBuffer = new VariableByteOutputStream(256);
     private OutputStream os = null;
 
     @Override
@@ -135,7 +134,7 @@ public class SymbolTable implements BrokerPoolService, Closeable {
     }
 
     @Override
-    public void stop(final DBBroker systemBroker) throws BrokerPoolServiceException {
+    public void stopSystem(final DBBroker systemBroker) throws BrokerPoolServiceException {
         try {
             close();
         } catch (final IOException e) {
@@ -360,8 +359,8 @@ public class SymbolTable implements BrokerPoolService, Closeable {
      * @throws EXistException in response to eXist-db error
      */
     private void saveSymbols() throws EXistException {
-        try(final VariableByteOutputStream os = new VariableByteOutputStream(256);
-                final OutputStream fos =  Files.newOutputStream(getFile())) {
+        try(final VariableByteOutputStream os = new VariableByteOutputStream(8192);
+                final OutputStream fos =  new BufferedOutputStream(Files.newOutputStream(getFile()))) {
             writeAll(os);
             fos.write(os.toByteArray());
         } catch(final FileNotFoundException e) {
@@ -379,7 +378,7 @@ public class SymbolTable implements BrokerPoolService, Closeable {
      * @throws EXistException in response to eXist-db error
      */
     private synchronized void loadSymbols() throws EXistException {
-        try(final InputStream fis = Files.newInputStream(getFile())) {
+        try(final InputStream fis = new BufferedInputStream(Files.newInputStream(getFile()))) {
 
             final VariableByteInput is = new VariableByteInputStream(fis);
             final int magic = is.readFixedInt();
@@ -423,7 +422,7 @@ public class SymbolTable implements BrokerPoolService, Closeable {
 
     private OutputStream getOutputStream() throws IOException {
         if(os == null) {
-            os = Files.newOutputStream(getFile(), StandardOpenOption.APPEND);
+            os = new BufferedOutputStream(Files.newOutputStream(getFile(), StandardOpenOption.APPEND));
         }
         return os;
     }

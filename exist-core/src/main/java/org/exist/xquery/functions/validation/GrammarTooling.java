@@ -1,28 +1,26 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2009 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * $Id$
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.xquery.functions.validation;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
@@ -35,7 +33,6 @@ import org.apache.xerces.xni.parser.XMLInputSource;
 
 import org.exist.Namespaces;
 import org.exist.dom.QName;
-import org.exist.dom.memtree.DocumentImpl;
 import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.dom.memtree.NodeImpl;
 import org.exist.storage.BrokerPool;
@@ -87,7 +84,7 @@ public class GrammarTooling extends BasicFunction  {
             "</report>\n";
     
     // Setup function signature
-    public final static FunctionSignature signatures[] = {
+    public final static FunctionSignature[] signatures = {
         new FunctionSignature(
             new QName("clear-grammar-cache", ValidationModule.NAMESPACE_URI,
             ValidationModule.PREFIX),
@@ -222,7 +219,7 @@ public class GrammarTooling extends BasicFunction  {
             LOG.debug("Successfully parsed "+allGrammars.size()+" grammars.");
             
             // Send all XSD grammars to grammarpool
-            Grammar grammars[] = new Grammar[allGrammars.size()];
+            Grammar[] grammars = new Grammar[allGrammars.size()];
             grammars = allGrammars.toArray(grammars);
             grammarpool.cacheGrammars(TYPE_XSD, grammars);
  
@@ -259,12 +256,12 @@ public class GrammarTooling extends BasicFunction  {
         
         final int nodeNr = builder.startElement("", "report", "report",null);
         
-        final Grammar xsds[] = grammarpool.retrieveInitialGrammarSet(TYPE_XSD);
+        final Grammar[] xsds = grammarpool.retrieveInitialGrammarSet(TYPE_XSD);
         for (Grammar xsd : xsds) {
             writeGrammar(xsd, builder);
         }
         
-        final Grammar dtds[] = grammarpool.retrieveInitialGrammarSet(TYPE_DTD);
+        final Grammar[] dtds = grammarpool.retrieveInitialGrammarSet(TYPE_DTD);
         for (Grammar dtd : dtds) {
             writeGrammar(dtd, builder);
         }

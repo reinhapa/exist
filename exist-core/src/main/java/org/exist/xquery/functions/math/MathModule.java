@@ -1,23 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2012 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- * 
- *  $Id$
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery.functions.math;
 
@@ -40,7 +40,7 @@ public class MathModule extends AbstractInternalModule {
     public final static String INCLUSION_DATE = "2012-12-05";
     public final static String RELEASED_IN_VERSION = "eXist-2.0";
 
-    private final static FunctionDef functions[] = {
+    private final static FunctionDef[] functions = {
         
         new FunctionDef(OneParamFunctions.FNS_ACOS, OneParamFunctions.class),
         new FunctionDef(OneParamFunctions.FNS_ASIN, OneParamFunctions.class),
@@ -60,7 +60,7 @@ public class MathModule extends AbstractInternalModule {
         new FunctionDef(TwoParamFunctions.FNS_POW, TwoParamFunctions.class)
     };
     
-    public MathModule(Map<String, List<? extends Object>> parameters) {
+    public MathModule(Map<String, List<?>> parameters) {
         super(functions, parameters);
     }
     

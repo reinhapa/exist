@@ -1,3 +1,24 @@
+/*
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
+ *
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 package org.exist.xquery.functions.fn;
 
 import org.exist.dom.QName;
@@ -14,7 +35,7 @@ import org.exist.xquery.value.Type;
 
 public class FunOnFunctions extends BasicFunction {
 
-	public final static FunctionSignature signatures[] = {
+	public final static FunctionSignature[] signatures = {
         new FunctionSignature(
             new QName("function-lookup", Function.BUILTIN_FUNCTION_NS),
             "Returns a reference to the function having a given name and arity, if there is one," +
@@ -94,21 +115,29 @@ public class FunOnFunctions extends BasicFunction {
 		}
 	}
 
-	public static FunctionCall lookupFunction(Expression parent, QName qname, int arity) throws XPathException {
+	public static FunctionCall lookupFunction(final Expression parent, final QName qname, final int arity) {
 	    // check if the function is from a module 
-	    final Module module = parent.getContext().getModule(qname.getNamespaceURI());
+	    final Module[] modules = parent.getContext().getModules(qname.getNamespaceURI());
 	    try {
-			UserDefinedFunction func;
-			if(module == null) {
+			UserDefinedFunction func = null;
+			if (modules == null || modules.length == 0) {
 			    func = parent.getContext().resolveFunction(qname, arity);
 			} else {
-			    if(module.isInternalModule()) {
-			        throw new XPathException(parent, ErrorCodes.XPST0017, "Cannot create a reference to an internal Java function");
-			    }
-			    func = ((ExternalModule)module).getFunction(qname, arity, parent.getContext());
+				for (final Module module : modules) {
+					func = ((ExternalModule)module).getFunction(qname, arity, parent.getContext());
+
+					if (func != null) {
+						if (module.isInternalModule()) {
+							throw new XPathException(parent, ErrorCodes.XPST0017, "Cannot create a reference to an internal Java function");
+						}
+
+						break;
+					}
+				}
 			}
-			if (func == null)
-			    {return null;}
+			if (func == null) {
+				return null;
+			}
 			final FunctionCall funcCall = new FunctionCall(parent.getContext(), func);
 			funcCall.setLocation(parent.getLine(), parent.getColumn());
 			return funcCall;

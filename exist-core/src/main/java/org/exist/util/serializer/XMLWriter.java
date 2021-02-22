@@ -1,21 +1,23 @@
-/* eXist Native XML Database
- * Copyright (C) 2000-03,  Wolfgang M. Meier (wolfgang@exist-db.org)
+/*
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
+ *
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
  * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Library General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Library General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- * 
- * $Id$
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.util.serializer;
 
@@ -230,7 +232,7 @@ public class XMLWriter {
                 closeStartTag(false);
             }
             writer.write('<');
-            if(qname.getPrefix() != null && qname.getPrefix().length() > 0) {
+            if(qname.getPrefix() != null && !qname.getPrefix().isEmpty()) {
                 writer.write(qname.getPrefix());
                 writer.write(':');
             }
@@ -264,7 +266,7 @@ public class XMLWriter {
                 closeStartTag(true);
             } else {
                 writer.write("</");
-                if(qname.getPrefix() != null && qname.getPrefix().length() > 0) {
+                if(qname.getPrefix() != null && !qname.getPrefix().isEmpty()) {
                     writer.write(qname.getPrefix());
                     writer.write(':');
                 }
@@ -278,7 +280,7 @@ public class XMLWriter {
     }
 
     public void namespace(final String prefix, final String nsURI) throws TransformerException {
-        if((nsURI == null) && (prefix == null || prefix.length() == 0)) {
+        if((nsURI == null) && (prefix == null || prefix.isEmpty())) {
             return;
         }
 
@@ -287,7 +289,7 @@ public class XMLWriter {
                 throw new TransformerException("Found a namespace declaration outside an element");
             }
 
-            if(prefix != null && prefix.length() > 0) {
+            if(prefix != null && !prefix.isEmpty()) {
                 writer.write(' ');
                 writer.write("xmlns");
                 writer.write(':');
@@ -338,7 +340,7 @@ public class XMLWriter {
                 // element");
             }
             writer.write(' ');
-            if(qname.getPrefix() != null && qname.getPrefix().length() > 0) {
+            if(qname.getPrefix() != null && !qname.getPrefix().isEmpty()) {
                 writer.write(qname.getPrefix());
                 writer.write(':');
             }
@@ -392,7 +394,7 @@ public class XMLWriter {
             }
             writer.write("<?");
             writer.write(target);
-            if(data != null && data.length() > 0) {
+            if(data != null && !data.isEmpty()) {
                 writer.write(' ');
                 writer.write(data);
             }

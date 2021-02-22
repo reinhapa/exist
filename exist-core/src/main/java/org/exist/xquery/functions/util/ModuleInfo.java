@@ -1,22 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2009-2015 The eXist-db Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery.functions.util;
 
@@ -47,6 +48,8 @@ import org.exist.xquery.value.Type;
 import org.exist.xquery.value.ValueSequence;
 
 import javax.xml.XMLConstants;
+
+import static org.apache.commons.lang3.ArrayUtils.isEmpty;
 
 /**
  * @author wolf
@@ -108,7 +111,7 @@ public class ModuleInfo extends BasicFunction {
 			new QName("get-module-description", UtilModule.NAMESPACE_URI, UtilModule.PREFIX),
 			"Returns a short description of the module identified by the namespace URI.",
 			new SequenceType[] { NAMESPACE_URI_PARAMETER },
-			new FunctionReturnSequenceType(Type.STRING, Cardinality.EXACTLY_ONE, "the description of the active function module identified by the namespace URI"),
+			new FunctionReturnSequenceType(Type.STRING, Cardinality.ONE_OR_MORE, "the description of the active function module identified by the namespace URI"),
                         InspectModule.FNS_INSPECT_MODULE_URI
         );
 	
@@ -153,14 +156,19 @@ public class ModuleInfo extends BasicFunction {
 		
 		if("get-module-description".equals(getSignature().getName().getLocalPart())) {
 			final String uri = args[0].getStringValue();
-			final Module module = context.getModule(uri);
-			if(module == null)
-				{throw new XPathException(this, "No module found matching namespace URI: " + uri);}
-			return new StringValue(module.getDescription());
+			final Module[] modules = context.getModules(uri);
+			if (isEmpty(modules)) {
+				throw new XPathException(this, "No module found matching namespace URI: " + uri);
+			}
+			final Sequence result = new ValueSequence();
+			for (final Module module : modules) {
+				result.add(new StringValue(module.getDescription()));
+			}
+			return result;
 		} else if ("is-module-registered".equals(getSignature().getName().getLocalPart())) {
 			final String uri = args[0].getStringValue();
-			final Module module = context.getModule(uri);
-			return new BooleanValue(module != null);
+			final Module[] modules = context.getModules(uri);
+			return new BooleanValue(modules != null && modules.length > 0);
         } else if ("mapped-modules".equals(getSignature().getName().getLocalPart())) {
             final ValueSequence resultSeq = new ValueSequence();
             for (final Iterator<String> i = context.getMappedModuleURIs(); i.hasNext();) {
@@ -199,9 +207,10 @@ public class ModuleInfo extends BasicFunction {
 				builder.startElement(MODULES_QNAME, null);
 				
 				if (getArgumentCount() == 1) {
-					final Module module = context.getModule(args[0].getStringValue());
-					if (module != null)
-						{outputModule(builder, module);}
+					final Module[] modules = context.getModules(args[0].getStringValue());
+					if (modules != null) {
+						outputModules(builder, modules);
+					}
 				} else {
 					for(final Iterator<Module> i = context.getRootModules(); i.hasNext(); ) {
 						final Module module = i.next();
@@ -228,15 +237,26 @@ public class ModuleInfo extends BasicFunction {
 		}
 	}
 
-	private void outputModule(MemTreeBuilder builder, Module module) {
+	private void outputModules(final MemTreeBuilder builder, final Module[] modules) {
+		if (modules == null) {
+			return;
+		}
+
+		for (final Module module : modules) {
+			outputModule(builder, module);
+		}
+	}
+
+	private void outputModule(final MemTreeBuilder builder, final Module module) {
 		builder.startElement(MODULE_QNAME, null);
 		
 		builder.addAttribute(MODULE_URI_ATTR, module.getNamespaceURI());
 		builder.addAttribute(MODULE_PREFIX_ATTR, module.getDefaultPrefix());
 		if (!module.isInternalModule()) {
 			final Source source = ((ExternalModule)module).getSource();
-			if (source != null)
-				{builder.addAttribute(MODULE_SOURCE_ATTR, source.getKey().toString());}
+			if (source != null) {
+				builder.addAttribute(MODULE_SOURCE_ATTR, source.pathOrContentOrShortIdentifier());
+			}
 		}
 		builder.startElement(MODULE_DESC_QNAME, null);
 		builder.characters(module.getDescription());

@@ -1,30 +1,28 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-06 Wolfgang M. Meier
- *  wolfgang@exist-db.org
- *  http://exist.sourceforge.net
- *  
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
- *  
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
- *  
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *  
- *  $Id$
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
+ *
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 package org.exist.xquery.value;
 
-import org.exist.util.FastStringBuffer;
-import org.exist.util.FloatingPointConverter;
+import net.sf.saxon.tree.util.FastStringBuffer;
+import net.sf.saxon.value.FloatingPointConverter;
 import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.XPathException;
 
@@ -32,6 +30,7 @@ import javax.xml.datatype.DatatypeConstants;
 import javax.xml.datatype.Duration;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 
 /**
  * @author <a href="mailto:piotr@ideanest.com">Piotr Kaminski</a>
@@ -128,7 +127,7 @@ public class DayTimeDurationValue extends OrderedDurationValue {
             //	sb.append(Double.toString(ms).substring(2));
             //}
             //0 is a dummy parameter
-            FloatingPointConverter.appendFloat(sb, s.floatValue()).getNormalizedString(FastStringBuffer.SUPPRESS_BOTH);
+            FloatingPointConverter.appendFloat(sb, s.floatValue(), false);
             sb.append("S");
             /*
             if (micros == 0) {
@@ -232,7 +231,7 @@ public class DayTimeDurationValue extends OrderedDurationValue {
         if (other.getType() == Type.DAY_TIME_DURATION) {
             final DecimalValue a = new DecimalValue(secondsValueSigned());
             final DecimalValue b = new DecimalValue(((DayTimeDurationValue) other).secondsValueSigned());
-            return new DecimalValue(a.value.divide(b.value, 20, BigDecimal.ROUND_HALF_UP));
+            return new DecimalValue(a.value.divide(b.value, 20, RoundingMode.HALF_UP));
         }
         if (other instanceof NumericValue) {
             if (((NumericValue) other).isNaN()) {
@@ -250,7 +249,7 @@ public class DayTimeDurationValue extends OrderedDurationValue {
         final BigDecimal divisor = numberToBigDecimal(other, "Operand to div should be of xdt:dayTimeDuration or numeric type; got: ");
         final boolean isDivisorNegative = divisor.signum() < 0;
         final BigDecimal secondsValueSigned = secondsValueSigned();
-        final DayTimeDurationValue quotient = fromDecimalSeconds(secondsValueSigned.divide(divisor.abs(), Math.max(Math.max(3, secondsValueSigned.scale()), divisor.scale()), BigDecimal.ROUND_HALF_UP));
+        final DayTimeDurationValue quotient = fromDecimalSeconds(secondsValueSigned.divide(divisor.abs(), Math.max(Math.max(3, secondsValueSigned.scale()), divisor.scale()), RoundingMode.HALF_UP));
         if (isDivisorNegative) {
             return new DayTimeDurationValue(quotient.negate().getCanonicalDuration());
         }

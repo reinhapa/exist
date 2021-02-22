@@ -1,14 +1,34 @@
+/*
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
+ *
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 package org.exist.xquery.functions.array;
 
 import com.evolvedbinary.j8fu.function.FunctionE;
+import com.ibm.icu.text.Collator;
 import org.exist.dom.QName;
 import org.exist.xquery.*;
+import org.exist.xquery.functions.fn.FunData;
 import org.exist.xquery.value.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Functions on arrays, see http://www.w3.org/TR/xpath-functions-31/#array-functions.
@@ -34,7 +54,8 @@ public class ArrayFunction extends BasicFunction {
         FOLD_RIGHT("fold-right"),
         FOR_EACH_PAIR("for-each-pair"),
         FLATTEN("flatten"),
-        PUT("put");
+        PUT("put"),
+        SORT("sort");
 
         final static Map<String, Fn> fnMap = new HashMap<>();
         static {
@@ -220,6 +241,33 @@ public class ArrayFunction extends BasicFunction {
                             new FunctionParameterSequenceType("input", Type.ITEM, Cardinality.ZERO_OR_MORE, "The sequence to flatten")
                     },
                     new FunctionReturnSequenceType(Type.ITEM, Cardinality.ZERO_OR_MORE, "The resulting sequence")
+            ),
+            new FunctionSignature(
+                    new QName(Fn.SORT.fname, ArrayModule.NAMESPACE_URI, ArrayModule.PREFIX),
+                    "Returns an array containing all the members of the supplied array, sorted according to their typed value",
+                    new SequenceType[] {
+                            new FunctionParameterSequenceType("array", Type.ARRAY, Cardinality.EXACTLY_ONE, "The array to process")
+                    },
+                    new FunctionReturnSequenceType(Type.ARRAY, Cardinality.EXACTLY_ONE, "The sorted array")
+            ),
+            new FunctionSignature(
+                    new QName(Fn.SORT.fname, ArrayModule.NAMESPACE_URI, ArrayModule.PREFIX),
+                    "Returns an array containing all the members of the supplied array, sorted according to the value of a sort key supplied as a function.",
+                    new SequenceType[] {
+                            new FunctionParameterSequenceType("array", Type.ARRAY, Cardinality.EXACTLY_ONE, "The array to process"),
+                            new FunctionParameterSequenceType("collation", Type.STRING, Cardinality.ZERO_OR_ONE, "The collation to use for sorting")
+                    },
+                    new FunctionReturnSequenceType(Type.ARRAY, Cardinality.EXACTLY_ONE, "The sorted array")
+            ),
+            new FunctionSignature(
+                    new QName(Fn.SORT.fname, ArrayModule.NAMESPACE_URI, ArrayModule.PREFIX),
+                    "Returns an array containing all the members of the supplied array, sorted according to the value of a sort key supplied as a function.",
+                    new SequenceType[] {
+                            new FunctionParameterSequenceType("array", Type.ARRAY, Cardinality.EXACTLY_ONE, "The array to process"),
+                            new FunctionParameterSequenceType("collation", Type.STRING, Cardinality.ZERO_OR_ONE, "The collation to use for sorting"),
+                            new FunctionParameterSequenceType("key", Type.FUNCTION_REFERENCE, Cardinality.EXACTLY_ONE, "A function called for each array member which produces a sort key")
+                    },
+                    new FunctionReturnSequenceType(Type.ARRAY, Cardinality.EXACTLY_ONE, "The sorted array")
             )
     };
 
@@ -291,11 +339,32 @@ public class ArrayFunction extends BasicFunction {
                         }
                         return array.subarray(start - 1, end);
                     case REMOVE:
-                        final int rpos = ((IntegerValue) args[1].itemAt(0)).getInt();
-                        if (rpos < 1 || rpos > array.getSize()) {
-                            throw new XPathException(this, ErrorCodes.FOAY0001, "Index of item to remove (" + rpos + ") is out of bounds");
+                        // Handle empty sequence
+                        if (args[1].isEmpty()) {
+                            return array;
                         }
-                        return array.remove(rpos - 1);
+
+                        final int arraySize = args[1].getItemCount();
+
+                        // Fetch and reverse sort parameters
+                        int[] positions = new int[arraySize];
+                        for (int i = 0; i < arraySize; i++) {
+                            final int position = ((IntegerValue) args[1].itemAt(i)).getInt();
+                            if (position < 1 || position > array.getSize()) {
+                                throw new XPathException(this, ErrorCodes.FOAY0001, "Index of item to remove (" + position + ") is out of bounds");
+                            }
+                            positions[i] = position - 1;
+                        }
+                        Arrays.sort(positions);
+
+                        // Iterate reverse over array, delete items
+                        ArrayType resultArray = array;
+                        for (int pos = arraySize - 1; pos >= 0; pos--) {
+                            resultArray = resultArray.remove(positions[pos]);
+                        }
+
+                        return resultArray;
+
                     case INSERT_BEFORE:
                         final int ipos = ((IntegerValue) args[1].itemAt(0)).getInt();
                         if (ipos < 1 || ipos > array.getSize() + 1) {
@@ -320,6 +389,32 @@ public class ArrayFunction extends BasicFunction {
                         return getFunction(args[2], ref -> array.foldRight(ref, args[1]));
                     case FOR_EACH_PAIR:
                         return getFunction(args[2], ref -> array.forEachPair((ArrayType) args[1].itemAt(0), ref));
+                    case SORT:
+                        if(args.length < 3) {
+                            final Collator collator;
+                            if (args.length == 2 && !args[1].isEmpty()) {
+                                final String collationURI = args[1].getStringValue();
+                                collator = context.getCollator(collationURI);
+                            } else {
+                                collator = context.getDefaultCollator();
+                            }
+
+                            //by default use fn:data#1 as the key function
+                            final FunctionReference keyFun = new FunctionReference(NamedFunctionReference.lookupFunction(this, context, FunData.qnData, 1));
+                            return array.sort(collator, keyFun);
+
+                        } else if (args.length == 3) {
+                            final Collator collator;
+                            if (!args[1].isEmpty()) {
+                                final String collationURI = args[1].getStringValue();
+                                collator = context.getCollator(collationURI);
+                            } else {
+                                collator = context.getDefaultCollator();
+                            }
+
+                            //user specified key function
+                            return getFunction(args[2], ref -> array.sort(collator, ref));
+                        }
                 }
         }
         throw new XPathException(this, "Unknown function: " + getName());

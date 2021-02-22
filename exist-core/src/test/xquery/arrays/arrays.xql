@@ -1,3 +1,24 @@
+(:
+ : eXist-db Open Source Native XML Database
+ : Copyright (C) 2001 The eXist-db Authors
+ :
+ : info@exist-db.org
+ : http://www.exist-db.org
+ :
+ : This library is free software; you can redistribute it and/or
+ : modify it under the terms of the GNU Lesser General Public
+ : License as published by the Free Software Foundation; either
+ : version 2.1 of the License, or (at your option) any later version.
+ :
+ : This library is distributed in the hope that it will be useful,
+ : but WITHOUT ANY WARRANTY; without even the implied warranty of
+ : MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ : Lesser General Public License for more details.
+ :
+ : You should have received a copy of the GNU Lesser General Public
+ : License along with this library; if not, write to the Free Software
+ : Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ :)
 xquery version "3.1";
 
 (:~
@@ -320,7 +341,7 @@ function arr:tail-empty() {
     array:tail([])
 };
 
-declare 
+declare
     %test:assertEquals(2, 3)
 function arr:tail-on-array() {
     array:tail([1,[2,3]])?*?*
@@ -381,6 +402,18 @@ declare
     %test:assertEmpty
 function arr:remove2() {
     array:remove(["a"], 1)?*
+};
+
+declare
+    %test:assertEquals("a", "b", "c", "d")
+function arr:remove3() {
+    array:remove(["a", "b", "c", "d"], ())?*
+};
+
+declare
+    %test:assertEquals("b", "d")
+function arr:remove4() {
+    array:remove(["a", "b", "c", "d", "e"], (3,1,5))?*
 };
 
 declare
@@ -987,4 +1020,34 @@ declare
     %test:assertError("err:FOAY0001")
 function arr:put_pos_illegal_index() {
     array:put(["a", "b", "c", "d"], 5, "x")?*
+};
+
+declare
+    %test:assertEquals(1, 3, 4, 5, 6)
+function arr:sort-int() {
+    array:sort([1, 4, 6, 5, 3])?*
+};
+
+declare
+    %test:assertEquals("1", "-2", "5", "8", "10", "-10", "10")
+function arr:sort-abs() {
+    array:sort([1, -2, 5, 10, -10, 10, 8], (), fn:abs#1)?*
+};
+
+declare
+    %test:assertEquals(0,0, 0,1, 1,0, 1,1)
+function arr:sort-seq() {
+    array:sort([(1,0), (1,1), (0,1), (0,0)])?*
+};
+
+declare
+    %test:assertEquals("b", "a", "c")
+function arr:sort-node() {
+    array:sort([<b/>, <a/>, <c/>])?* ! local-name(.)
+};
+
+declare
+    %test:assertError("err:XPTY0004")
+function arr:sort-mixed-1() {
+    array:sort([4, <b/>, 1, <d/>, "22", "2"])?*
 };

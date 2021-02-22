@@ -1,25 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2007 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
- *  $Id$
- *  
- *  @author <a href="mailto:pierrick.brihaye@free.fr">Pierrick Brihaye</a>
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.indexing.spatial;
 
@@ -41,6 +39,7 @@ import org.exist.util.DatabaseConfigurationException;
 import org.w3c.dom.Element;
 
 /**
+ * @author <a href="mailto:pierrick.brihaye@free.fr">Pierrick Brihaye</a>
  */
 public abstract class AbstractGMLJDBCIndex extends AbstractIndex {
 
@@ -57,7 +56,7 @@ public abstract class AbstractGMLJDBCIndex extends AbstractIndex {
     /**
      * An IndexWorker "pool"
      */
-    protected HashMap<DBBroker, AbstractGMLJDBCIndexWorker> workers = new HashMap<DBBroker, AbstractGMLJDBCIndexWorker>();
+    protected HashMap<DBBroker, AbstractGMLJDBCIndexWorker> workers = new HashMap<>();
 
     /**
      * The connection to the DB that will be needed for global operations 
@@ -87,9 +86,7 @@ public abstract class AbstractGMLJDBCIndex extends AbstractIndex {
         super.configure(pool, dataDir, config);
         try {
             checkDatabase();
-        } catch (ClassNotFoundException e) {
-            throw new DatabaseConfigurationException(e.getMessage());
-        } catch (SQLException e) {
+        } catch (final ClassNotFoundException | SQLException e) {
             throw new DatabaseConfigurationException(e.getMessage());
         }
     }
@@ -105,9 +102,7 @@ public abstract class AbstractGMLJDBCIndex extends AbstractIndex {
 
     @Override
     public void close() throws DBException {
-        Iterator<AbstractGMLJDBCIndexWorker> i = workers.values().iterator();
-        while (i.hasNext()) {
-            AbstractGMLJDBCIndexWorker worker = i.next();
+        for (AbstractGMLJDBCIndexWorker worker : workers.values()) {
             //Flush any pending stuff 
             worker.flush();
             //Reset state
@@ -132,9 +127,7 @@ public abstract class AbstractGMLJDBCIndex extends AbstractIndex {
 
     @Override
     public void remove() throws DBException {
-        Iterator<AbstractGMLJDBCIndexWorker> i = workers.values().iterator();
-        while (i.hasNext()) {
-            AbstractGMLJDBCIndexWorker worker = i.next();
+        for (AbstractGMLJDBCIndexWorker worker : workers.values()) {
             //Flush any pending stuff
             worker.flush();
             //Reset state

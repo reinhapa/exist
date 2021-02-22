@@ -1,23 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-06 The eXist Project
- *  http://exist-db.org
- *  
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
- *  
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
- *  
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *  
- *  $Id$
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
+ *
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 /*
  *  Some modifications Copyright (C) 2004 Luigi P. Bai
@@ -38,7 +38,6 @@ import org.exist.dom.NodeListImpl;
 import org.exist.dom.persistent.NodeSetHelper;
 import org.exist.storage.DBBroker;
 import org.exist.util.Configuration;
-import org.exist.util.FastStringBuffer;
 import org.exist.xquery.AnalyzeContextInfo;
 import org.exist.xquery.Constants;
 import org.exist.xquery.PathExpr;
@@ -166,7 +165,7 @@ public class XUpdateProcessor implements ContentHandler, LexicalHandler {
     private List<Modification> modifications = new ArrayList<>();
 
     /** Temporary string buffer used for collecting text chunks */
-    private FastStringBuffer charBuf = new FastStringBuffer(64);
+    private final StringBuilder charBuf = new StringBuilder(64);
 
     // Environment
 
@@ -287,9 +286,9 @@ public class XUpdateProcessor implements ContentHandler, LexicalHandler {
 		if (inModification && charBuf.length() > 0) {
 //            String normalized = charBuf.toString();
 			final String normalized = preserveWhitespace ? charBuf.toString() :
-				charBuf.getNormalizedString(FastStringBuffer.SUPPRESS_BOTH);
+					charBuf.toString().trim();
 
-			if (normalized.length() > 0) {
+			if (!normalized.isEmpty()) {
 				final Text text = doc.createTextNode(charBuf.toString());
 				final Element last = stack.peek();
 				if (last == null) {
@@ -405,7 +404,7 @@ public class XUpdateProcessor implements ContentHandler, LexicalHandler {
 						name = name.substring(p + 1);
 						namespace = atts.getValue("namespace");
 						if (namespace == null) {
-							namespace = (String) namespaces.get(prefix);
+							namespace = namespaces.get(prefix);
 						}
 						if (namespace == null) {
 							throw new SAXException(
@@ -413,7 +412,7 @@ public class XUpdateProcessor implements ContentHandler, LexicalHandler {
 						}
 					}
 					Element elem;
-					if (namespace != null && namespace.length() > 0) {
+					if (namespace != null && !namespace.isEmpty()) {
 						elem = doc.createElementNS(namespace, name);
 						elem.setPrefix(prefix);
 					} else {
@@ -446,14 +445,14 @@ public class XUpdateProcessor implements ContentHandler, LexicalHandler {
 						}
 						namespace = atts.getValue("namespace");
 						if (namespace == null) {
-							namespace = (String) namespaces.get(prefix);
+							namespace = namespaces.get(prefix);
 						}
 						if (namespace == null) {
 							throw new SAXException(
 									"no namespace defined for prefix " + prefix);
 						}
 					}
-					Attr attrib = namespace != null && namespace.length() > 0 ?
+					Attr attrib = namespace != null && !namespace.isEmpty() ?
 							doc.createAttributeNS(namespace, name) :
 							doc.createAttribute(name);
 					if (stack.isEmpty()) {
@@ -523,7 +522,7 @@ public class XUpdateProcessor implements ContentHandler, LexicalHandler {
 					break;
 			}
 		} else if (inModification) {
-			final Element elem = namespaceURI != null && namespaceURI.length() > 0 ?
+			final Element elem = namespaceURI != null && !namespaceURI.isEmpty() ?
 									doc.createElementNS(namespaceURI, qName) :
 									doc.createElement(qName);
 			Attr a;
@@ -584,8 +583,8 @@ public class XUpdateProcessor implements ContentHandler, LexicalHandler {
 		throws SAXException {
 		if (inModification && charBuf.length() > 0) {
 			final String normalized = preserveWhitespace ? charBuf.toString() :
-				charBuf.getNormalizedString(FastStringBuffer.SUPPRESS_BOTH);
-			if (normalized.length() > 0) {
+					charBuf.toString().trim();
+			if (!normalized.isEmpty()) {
 				final Text text = doc.createTextNode(charBuf.toString());
 				final Element last = stack.peek();
 				if (last == null) {
@@ -695,8 +694,8 @@ public class XUpdateProcessor implements ContentHandler, LexicalHandler {
 		throws SAXException {
 		if (inModification && charBuf.length() > 0) {
 			final String normalized =
-				charBuf.getNormalizedString(FastStringBuffer.SUPPRESS_BOTH);
-			if (normalized.length() > 0) {
+					charBuf.toString().trim();
+			if (!normalized.isEmpty()) {
 				final Text text = doc.createTextNode(normalized);
 				final Element last = stack.peek();
 				if (last == null) {
@@ -793,8 +792,8 @@ public class XUpdateProcessor implements ContentHandler, LexicalHandler {
 	public void comment(char[] ch, int start, int length) throws SAXException {
 		if (inModification && charBuf.length() > 0) {
 			final String normalized =
-				charBuf.getNormalizedString(FastStringBuffer.SUPPRESS_BOTH);
-			if (normalized.length() > 0) {
+					charBuf.toString().trim();
+			if (!normalized.isEmpty()) {
 				final Text text = doc.createTextNode(normalized);
 				final Element last = stack.peek();
 				if (last == null) {
@@ -856,7 +855,7 @@ public class XUpdateProcessor implements ContentHandler, LexicalHandler {
 		this.broker = null;
 		this.documentSet = null;
 		this.modifications.clear();
-		this.charBuf = new FastStringBuffer(64);
+		this.charBuf.setLength(0);
 		this.variables.clear();
 		this.namespaces.clear();
 		this.conditionals.clear();

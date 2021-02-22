@@ -1,22 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2008-2015 The eXist-db Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.indexing.lucene;
 
@@ -565,6 +566,22 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         }
     }
 
+    /**
+     * Calls {@link LuceneUtil#extractTerms(Query, Map, IndexReader, boolean)}  to extract
+     * the terms which would be matched by the given query.
+     *
+     * @param query to extract terms for
+     * @return the map returned by {@link LuceneUtil#extractTerms(Query, Map, IndexReader, boolean)}
+     * @throws IOException in case of Lucene IO error
+     */
+    public Map<Object, Query> getTerms(final Query query) throws IOException {
+        return index.withReader(reader -> {
+            final Map<Object, Query> termMap = new TreeMap<>();
+            LuceneUtil.extractTerms(query, termMap, reader, false);
+            return termMap;
+        });
+    }
+
     public NodeSet queryField(XQueryContext context, int contextId, DocumentSet docs, NodeSet contextSet,
             String field, String queryString, int axis, QueryOptions options)
             throws IOException, XPathException {
@@ -674,6 +691,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     /**
      * SOLR
      *
+     * @param context the xquery context
      * @param toBeMatchedURIs the URIs to match
      * @param queryText the query
      * @param fieldsToGet the fields to get
@@ -1045,7 +1063,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         if (qname.getLocalPart() != null && (!qname.getLocalPart().equals(QName.WILDCARD))) {
             match = qname.getLocalPart().equals(candidate.getLocalPart());
         }
-        if (match && qname.getNamespaceURI() != null && (!qname.getNamespaceURI().equals(QName.WILDCARD)) && qname.getNamespaceURI().length() > 0) {
+        if (match && qname.getNamespaceURI() != null && (!qname.getNamespaceURI().equals(QName.WILDCARD)) && !qname.getNamespaceURI().isEmpty()) {
             match = qname.getNamespaceURI().equals(candidate.getNamespaceURI());
         }
         return match;
@@ -1058,6 +1076,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
      * @param config the lucene config
      * @param field the analyzer field
      * @param qname the analyzer qname
+     * @param opts the query options
      *
      * @return the analyzer or null
      */
@@ -1091,7 +1110,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
      *
      * @return the lucene config or null
      */
-    @Nullable protected LuceneConfig getLuceneConfig(DBBroker broker, DocumentSet docs) {
+    public LuceneConfig getLuceneConfig(DBBroker broker, DocumentSet docs) {
         for (Iterator<Collection> i = docs.getCollectionIterator(); i.hasNext(); ) {
             Collection collection = i.next();
             IndexSpec idxConf = collection.getIndexConfiguration(broker);
@@ -1438,8 +1457,8 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     }
 
     private class LuceneStreamListener extends AbstractStreamListener {
-        private ArrayList<PendingAttr> pendingAttrs = new ArrayList<PendingAttr>();
-	private ArrayList<AttrImpl> attributes = new ArrayList<AttrImpl>(10);
+        private ArrayList<PendingAttr> pendingAttrs = new ArrayList<>();
+	private ArrayList<AttrImpl> attributes = new ArrayList<>(10);
         private ElementImpl currentElement;
 
         @Override

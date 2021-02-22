@@ -1,23 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2010 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- *  $Id$
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.backup;
 
@@ -74,12 +74,20 @@ public class ExportMain {
             .description("export database contents while preserving as much data as possible")
             .defaultValue(false)
             .build();
+    private static final Argument<Boolean> noExportArg = optionArgument("--no-export")
+            .description("do not export the database contents, overrides argument --export")
+            .defaultValue(false)
+            .build();
     private static final Argument<Boolean> incrementalArg = optionArgument("-i", "--incremental")
             .description("create incremental backup (use with --export|-x)")
             .defaultValue(false)
             .build();
     private static final Argument<Boolean> zipArg = optionArgument("-z", "--zip")
             .description("write output to a ZIP instead of a file system directory")
+            .defaultValue(false)
+            .build();
+    private static final Argument<Boolean> noZipArg = optionArgument("--no-zip")
+            .description("do not zip the output, overrides argument --zip")
             .defaultValue(false)
             .build();
 
@@ -115,7 +123,7 @@ public class ExportMain {
     public static void main(final String[] args) {
         try {
             final ParsedArguments arguments = CommandLineParser
-                    .withArguments(noCheckArg, checkDocsArg, directAccessArg, exportArg, incrementalArg, zipArg)
+                    .withArguments(noCheckArg, checkDocsArg, directAccessArg, exportArg, noExportArg, incrementalArg, zipArg, noZipArg)
                     .andArguments(configArg, outputDirArg)
                     .andArguments(helpArg, verboseArg)
                     .parse(args);
@@ -134,9 +142,17 @@ public class ExportMain {
         final boolean noCheck = getBool(arguments, noCheckArg);
         final boolean checkDocs = getBool(arguments, checkDocsArg);
         final boolean direct = getBool(arguments, directAccessArg);
-        final boolean export = getBool(arguments, exportArg);
+        boolean export = getBool(arguments, exportArg);
+        final boolean noExport = getBool(arguments, noExportArg);
+        if (noExport) {
+            export = false;
+        }
         final boolean incremental = getBool(arguments, incrementalArg);
-        final boolean zip = getBool(arguments, zipArg);
+        boolean zip = getBool(arguments, zipArg);
+        final boolean noZip = getBool(arguments, noZipArg);
+        if (noZip) {
+            zip = false;
+        }
 
         final Optional<Path> dbConfig = getOpt(arguments, configArg).map(File::toPath);
         final Path exportTarget = arguments.get(outputDirArg).toPath();

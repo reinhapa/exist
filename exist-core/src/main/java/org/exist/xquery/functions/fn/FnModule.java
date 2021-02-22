@@ -1,23 +1,23 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2001-2009 The eXist Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *
- *  $Id$
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery.functions.fn;
 
@@ -71,7 +71,8 @@ public class FnModule extends AbstractInternalModule {
         new FunctionDef(FunDistinctValues.signatures[1], FunDistinctValues.class),
         new FunctionDef(FunDoc.signature, FunDoc.class),
         new FunctionDef(FunDocAvailable.signature, FunDocAvailable.class),
-        new FunctionDef(FunDocumentURI.signature, FunDocumentURI.class),
+        new FunctionDef(FunDocumentURI.FS_DOCUMENT_URI_0, FunDocumentURI.class),
+        new FunctionDef(FunDocumentURI.FS_DOCUMENT_URI_1, FunDocumentURI.class),
         new FunctionDef(FunEmpty.signature, FunEmpty.class),
         new FunctionDef(FunEncodeForURI.signature, FunEncodeForURI.class),
         new FunctionDef(FunEndsWith.signatures[0], FunEndsWith.class),
@@ -204,7 +205,8 @@ public class FnModule extends AbstractInternalModule {
         new FunctionDef(FunTokenize.FS_TOKENIZE[0], FunTokenize.class),
         new FunctionDef(FunTokenize.FS_TOKENIZE[1], FunTokenize.class),
         new FunctionDef(FunTokenize.FS_TOKENIZE[2], FunTokenize.class),
-        new FunctionDef(FunTrace.signature, FunTrace.class),
+        new FunctionDef(FunTrace.FS_TRACE1, FunTrace.class),
+        new FunctionDef(FunTrace.FS_TRACE2, FunTrace.class),
         new FunctionDef(FunTranslate.signature, FunTranslate.class),
         new FunctionDef(FunTrueOrFalse.fnTrue, FunTrueOrFalse.class),
         new FunctionDef(FunTrueOrFalse.fnFalse, FunTrueOrFalse.class),
@@ -266,7 +268,7 @@ public class FnModule extends AbstractInternalModule {
     public final static ErrorCodes.ErrorCode SEPM0019 = new ErrorCodes.ErrorCode("SEPM0019", "It is an error if an instance of the data model " +
             "used to specify the settings of serialization parameters specifies the value of the same parameter more than once.");
 
-    public FnModule(Map<String, List<? extends Object>> parameters) {
+    public FnModule(Map<String, List<?>> parameters) {
         super(functions, parameters, true);
     }
 

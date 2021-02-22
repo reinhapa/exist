@@ -1,3 +1,24 @@
+(:
+ : eXist-db Open Source Native XML Database
+ : Copyright (C) 2001 The eXist-db Authors
+ :
+ : info@exist-db.org
+ : http://www.exist-db.org
+ :
+ : This library is free software; you can redistribute it and/or
+ : modify it under the terms of the GNU Lesser General Public
+ : License as published by the Free Software Foundation; either
+ : version 2.1 of the License, or (at your option) any later version.
+ :
+ : This library is distributed in the hope that it will be useful,
+ : but WITHOUT ANY WARRANTY; without even the implied warranty of
+ : MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ : Lesser General Public License for more details.
+ :
+ : You should have received a copy of the GNU Lesser General Public
+ : License along with this library; if not, write to the Free Software
+ : Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ :)
 xquery version "3.0";
 
 module namespace z="http://exist-db.org/testsuite/zips";
@@ -29,3 +50,19 @@ function z:fnZipUtf8Content() {
   return
     ($z:myZipContentUTF8Base64 eq  $z:myStaticUTF8ContentBase64)
 };
+
+(: Verify zero byte sized resource :)
+declare
+	%test:assertEquals("")
+function z:zeroByteBinResource() {
+    let $collection-uri :="/db/"
+    let $resource-name :="empty.txt"
+    let $contents :=""
+
+    let $empty-file := xmldb:store-as-binary($collection-uri, $resource-name, $contents)
+
+    let $zip := compression:zip(<entry type="uri" name="{$collection-uri}">{$collection-uri||$resource-name}</entry>, true())
+
+    return util:binary-to-string(util:binary-doc($collection-uri||$resource-name))
+};
+

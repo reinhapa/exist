@@ -1,23 +1,23 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2009 The eXist Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *
- *  $Id$
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery.functions.util;
 
@@ -267,7 +267,7 @@ public class GetFragmentBetween extends BasicFunction {
             final String attrName = reader.getAttributeLocalName(j);
             final String attrValue = escape(reader.getAttributeValue(j));
             String attrString = "";
-            if (!(attrNamePrefix == null || attrNamePrefix.length() == 0)) {
+            if (!(attrNamePrefix == null || attrNamePrefix.isEmpty())) {
                 attrString = attrNamePrefix + ":";
             }
             attrString = attrString + attrName + "=\"" + attrValue + "\"";
@@ -275,7 +275,7 @@ public class GetFragmentBetween extends BasicFunction {
         }
         final String elemPrefix = reader.getPrefix();
         String elemPart = "";
-        if (!(elemPrefix == null || elemPrefix.length() == 0)) {
+        if (!(elemPrefix == null || elemPrefix.isEmpty())) {
             elemPart = elemPrefix + ":";
         }
         elemPart = elemPart + elemName;
@@ -286,7 +286,7 @@ public class GetFragmentBetween extends BasicFunction {
         final String elemName = reader.getLocalName();
         final String elemPrefix = reader.getPrefix();
         String elemPart = "";
-        if (!(elemPrefix == null || elemPrefix.length() == 0)) {
+        if (!(elemPrefix == null || elemPrefix.isEmpty())) {
             elemPart = elemPrefix + ":";
         }
         elemPart = elemPart + elemName;
@@ -312,7 +312,7 @@ public class GetFragmentBetween extends BasicFunction {
     private String getPITag(final XMLStreamReader reader) {
         final String piTarget = reader.getPITarget();
         String piData = reader.getPIData();
-        if (!(piData == null || piData.length() == 0)) {
+        if (!(piData == null || piData.isEmpty())) {
             piData = " " + piData;
         } else {
             piData = "";
@@ -367,7 +367,7 @@ public class GetFragmentBetween extends BasicFunction {
                 element = element.replaceAll(" eq ", "=");  // opening element: remove @ character
                 element = element.replaceAll("@", "");  // opening element: remove @ character
                 element = element.replaceAll("\\]", "");  // opening element: remove closing bracket
-                if (!(element.length() == 0)) {
+                if (!(element.isEmpty())) {
                     result.append('<').append(element).append('>').append('\n');
                 }
             }
@@ -376,7 +376,7 @@ public class GetFragmentBetween extends BasicFunction {
             for (int i = elements.size() - 1; i >= 0; i--) {
                 String element = elements.get(i);
                 element = element.replaceAll("\\[[^\\]]*\\]", "");  // closing element: remove brackets with attributes
-                if (!(element.length() == 0)) {
+                if (!(element.isEmpty())) {
                     result.append('<').append('/').append(element).append('>').append('\n');
                 }
             }

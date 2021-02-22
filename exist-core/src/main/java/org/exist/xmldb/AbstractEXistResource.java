@@ -1,21 +1,23 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2001-2015 The eXist Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xmldb;
 
@@ -61,7 +63,7 @@ public abstract class AbstractEXistResource extends AbstractLocal implements EXi
 
     @Override
     public String getMimeType() throws XMLDBException {
-        return getMimeType(() -> read((document, broker, transaction) -> document.getMetadata().getMimeType()));
+        return getMimeType(() -> read((document, broker, transaction) -> document.getMimeType()));
     }
 
     /**
@@ -70,7 +72,7 @@ public abstract class AbstractEXistResource extends AbstractLocal implements EXi
      * that are already working within a transaction
      */
     String getMimeType(final DBBroker broker, final Txn transaction) throws XMLDBException {
-        return getMimeType(() -> this.<String>read(broker, transaction).apply((document, broker1, transaction1) -> document.getMetadata().getMimeType()));
+        return getMimeType(() -> this.<String>read(broker, transaction).apply((document, broker1, transaction1) -> document.getMimeType()));
     }
 
     private String getMimeType(final SupplierE<String, XMLDBException> mimeTypeRead) throws XMLDBException {
@@ -96,12 +98,12 @@ public abstract class AbstractEXistResource extends AbstractLocal implements EXi
 
     @Override
     public Date getCreationTime() throws XMLDBException {
-        return read((document, broker, transaction) -> new Date(document.getMetadata().getCreated()));
+        return read((document, broker, transaction) -> new Date(document.getCreated()));
     }
 
     @Override
     public Date getLastModificationTime() throws XMLDBException {
-        return read((document, broker, transaction) -> new Date(document.getMetadata().getLastModified()));
+        return read((document, broker, transaction) -> new Date(document.getLastModified()));
     }
 
     @Override
@@ -115,7 +117,7 @@ public abstract class AbstractEXistResource extends AbstractLocal implements EXi
                 throw new XMLDBException(ErrorCodes.INVALID_RESOURCE, "Resource " + docId + " not found");
             }
 
-            document.getMetadata().setLastModified(lastModificationTime.getTime());
+            document.setLastModified(lastModificationTime.getTime());
             return null;
         });
     }

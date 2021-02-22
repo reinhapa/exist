@@ -1,29 +1,30 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2006-2010 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- *  $Id$
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.backup;
 
 import org.exist.util.FileUtils;
 import org.exist.xmldb.XmldbURI;
 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
@@ -106,14 +107,14 @@ public class FileSystemWriter implements BackupWriter {
 
     @Override
     public OutputStream newEntry(final String name) throws IOException {
-        currentOut = Files.newOutputStream(currentDir.resolve(name));
+        currentOut = new BufferedOutputStream(Files.newOutputStream(currentDir.resolve(name)));
         dataWritten = true;
         return (currentOut);
     }
 
     @Override
     public OutputStream newBlobEntry(final String blobId) throws IOException {
-        currentOut = Files.newOutputStream(blobDir.resolve(blobId));
+        currentOut = new BufferedOutputStream(Files.newOutputStream(blobDir.resolve(blobId)));
         dataWritten = true;
         return currentOut;
     }
@@ -129,7 +130,7 @@ public class FileSystemWriter implements BackupWriter {
             throw (new IOException("Backup properties need to be set before any backup data is written"));
         }
         final Path propFile = rootDir.resolve("backup.properties");
-        try (final OutputStream os = Files.newOutputStream(propFile)) {
+        try (final OutputStream os = new BufferedOutputStream(Files.newOutputStream(propFile))) {
             properties.store(os, "Backup properties");
         }
     }

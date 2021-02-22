@@ -1,31 +1,25 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2012-2015 The eXist-db Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.repo;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Collection;
-import java.util.Optional;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,10 +28,20 @@ import org.exist.start.Classpath;
 import org.exist.start.EXistClassLoader;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.BrokerPoolService;
-import org.exist.storage.BrokerPoolServiceException;
-import org.expath.pkg.repo.*;
+import org.expath.pkg.repo.FileSystemStorage;
 import org.expath.pkg.repo.Package;
+import org.expath.pkg.repo.PackageException;
+import org.expath.pkg.repo.Packages;
 import org.expath.pkg.repo.deps.ProcessorDependency;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Helper class to construct classpath for expath modules containing
@@ -47,11 +51,8 @@ public class ClasspathHelper implements BrokerPoolService {
 
     private final static Logger LOG = LogManager.getLogger(ClasspathHelper.class);
 
-    // if no eXist version is specified in the expath-pkg.xml, we assume it is 2.2 or older
-    private final static PackageLoader.Version DEFAULT_VERSION = new PackageLoader.Version("1.4.0", "2.2.1");
-
     @Override
-    public void prepare(final BrokerPool brokerPool) throws BrokerPoolServiceException {
+    public void prepare(final BrokerPool brokerPool) {
         final ClassLoader loader = brokerPool.getClassLoader();
         if (!(loader instanceof EXistClassLoader)) {
             return;
@@ -106,24 +107,56 @@ public class ClasspathHelper implements BrokerPoolService {
         }
     }
 
-    private static boolean isCompatible(Package pkg) throws PackageException {
+    private static boolean isCompatible(final Package pkg) throws PackageException {
         // determine the eXist-db version this package is compatible with
         final Collection<ProcessorDependency> processorDeps = pkg.getProcessorDeps();
         final String procVersion = SystemProperties.getInstance().getSystemProperty("product-version", "1.0");
-        PackageLoader.Version processorVersion = DEFAULT_VERSION;
-        for (ProcessorDependency dependency: processorDeps) {
+        PackageLoader.Version requiresExistVersion = null;
+        for (final ProcessorDependency dependency: processorDeps) {
             if (Deployment.PROCESSOR_NAME.equals(dependency.getProcessor())) {
                 if (dependency.getSemver() != null) {
-                    processorVersion = new PackageLoader.Version(dependency.getSemver(), true);
+                    requiresExistVersion = new PackageLoader.Version(dependency.getSemver(), true);
                 } else if (dependency.getSemverMax() != null || dependency.getSemverMin() != null) {
-                    processorVersion = new PackageLoader.Version(dependency.getSemverMin(), dependency.getSemverMax());
+                    requiresExistVersion = new PackageLoader.Version(dependency.getSemverMin(), dependency.getSemverMax());
                 } else if (dependency.getVersions() != null) {
-                    processorVersion = new PackageLoader.Version(dependency.getVersions(), false);
+                    requiresExistVersion = new PackageLoader.Version(dependency.getVersions(), false);
                 }
                 break;
             }
         }
-        return processorVersion.getDependencyVersion().isCompatible(procVersion);
+        if (requiresExistVersion == null) {
+
+            // does the package contain XQuery Module(s) implemented in Java?
+            final ExistPkgInfo existPkgInfo = (ExistPkgInfo) pkg.getInfo("exist");
+            if (existPkgInfo == null) {
+                // no Java modules
+                return true;
+            }
+
+            final Set<URI> javaModules = existPkgInfo.getJavaModules();
+            if (javaModules == null || javaModules.isEmpty()) {
+                // no Java modules
+                return true;
+            }
+
+            /*
+                There are eXist-db Java modules in the package,
+                but the package does not declare which version
+                of eXist-db (the processor) that it depends upon,
+                therefore we assume it is incompatible.
+
+                NOTE - In older versions of eXist-db, if the package
+                did not declare a dependency on a specific processor
+                version, we would check whether the version of
+                eXist-db was between 1.4.0 and 2.2.1
+                (inclusive). As we are now past eXist-db version
+                5.2.0, that would always return false!
+             */
+            return false;
+
+        } else {
+            return requiresExistVersion.getDependencyVersion().isCompatible(procVersion);
+        }
     }
 
     private static void scanPackageDir(Classpath classpath, Path module) throws IOException {

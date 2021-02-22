@@ -1,24 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-09 Wolfgang M. Meier
- *  wolfgang@exist-db.org
- *  http://exist.sourceforge.net
- *  
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
- *  
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
- *  
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *  
- *  $Id:
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
+ *
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery.functions.system;
 
@@ -50,7 +49,7 @@ public class Shutdown extends BasicFunction
 {
 	protected final static Logger logger = LogManager.getLogger(Shutdown.class);
 
-	public final static FunctionSignature signatures[] = {
+	public final static FunctionSignature[] signatures = {
 		new FunctionSignature(
 			new QName("shutdown", SystemModule.NAMESPACE_URI, SystemModule.PREFIX),
 			"Shutdown eXist immediately.  This method is only available to the DBA role.",
@@ -97,8 +96,8 @@ public class Shutdown extends BasicFunction
 			if(delay > 0)
 			{
 				logger.info("Shutdown in " + delay + " milliseconds.");
-				final TimerTask task = new DelayedShutdownTask(pool);
 				final Timer timer = new Timer("eXist-db shutdown schedule", true);
+				final TimerTask task = new DelayedShutdownTask(timer, pool);
 				timer.schedule(task, delay);
 			}
 			else
@@ -117,20 +116,25 @@ public class Shutdown extends BasicFunction
 		return Sequence.EMPTY_SEQUENCE;
 	}
 	
-	private static class DelayedShutdownTask extends TimerTask
-	{
-		private BrokerPool pool = null;
+	private static class DelayedShutdownTask extends TimerTask {
+		private Timer timer;
+		private BrokerPool pool;
 		
-		public DelayedShutdownTask(BrokerPool pool)
-		{
-			super();
+		public DelayedShutdownTask(final Timer timer, final BrokerPool pool) {
+			this.timer = timer;
 			this.pool = pool;
 		}
-		
-		public void run()
-		{
+
+		@Override
+		public void run() {
 			logger.info("Shutting down now.");
 			pool.shutdown();
+
+			// make sure to stop the timer thread!
+			timer.cancel();
+
+			timer = null;
+			pool = null;
 		}
 	}
 }

@@ -1,21 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2015 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.indexing.lucene;
 
@@ -202,8 +204,12 @@ public class LuceneConfig {
         return analyzers.getAnalyzerById(config.getAnalyzerId());
     }
 
-    /** Gets the Analyzer (defined in this LuceneConfig) with the specified id.
-     *  Returns null if no match was found.
+    /**
+     * Gets the Analyzer (defined in this LuceneConfig) with the specified id.
+     *
+     * @param analyzerId the id of the analyzer
+     *
+     * @return the analyzer, or null if no match was found.
      */
     public Analyzer getAnalyzerById(String analyzerId) {
         return analyzers.getAnalyzerById(analyzerId);
@@ -414,10 +420,10 @@ public class LuceneConfig {
             this.prefix = config.getAttribute(ATTR_MODULE_PREFIX);
             this.at = config.getAttribute(ATTR_MODULE_AT);
 
-            if (this.prefix == null || this.prefix.length() == 0) {
+            if (this.prefix == null || this.prefix.isEmpty()) {
                 throw new DatabaseConfigurationException("Attribute prefix for <module> required");
             }
-            if (this.uri == null || this.uri.length() == 0) {
+            if (this.uri == null || this.uri.isEmpty()) {
                 throw new DatabaseConfigurationException("Attribute uri for <module> required");
             }
         }

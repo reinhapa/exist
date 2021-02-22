@@ -1,3 +1,24 @@
+/*
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
+ *
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 package org.exist.xquery;
 
 import java.util.ArrayList;
@@ -96,7 +117,7 @@ public class PartialFunctionApplication extends AbstractExpression {
 				}
 			}
 		}
-		final SequenceType[] newParamArray = newParamTypes.toArray(new SequenceType[newParamTypes.size()]);
+		final SequenceType[] newParamArray = newParamTypes.toArray(new SequenceType[0]);
 		final QName name = new QName(PARTIAL_FUN_PREFIX + hashCode(), XMLConstants.NULL_NS_URI);
 		final FunctionSignature newSignature = new FunctionSignature(name, newParamArray, signature.getReturnType());
 		final UserDefinedFunction func = new UserDefinedFunction(context, newSignature);

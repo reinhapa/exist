@@ -1,27 +1,27 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2013 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- *  $Id$
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery.modules.range;
 
-import org.exist.indexing.range.*;
+import org.exist.indexing.range.RangeIndex;
 import org.exist.storage.NodePath;
 import org.exist.xquery.*;
 import org.exist.xquery.Constants.Comparison;
@@ -69,7 +69,7 @@ public class RangeQueryRewriter extends QueryRewriter {
 
                     Expression innerExpr = pred.getExpression(0);
                     List<LocationStep> steps = getStepsToOptimize(innerExpr);
-                    if (steps == null || steps.size() == 0) {
+                    if (steps == null || steps.isEmpty()) {
                         // no optimizable steps found
                         continue;
                     }
@@ -126,25 +126,27 @@ public class RangeQueryRewriter extends QueryRewriter {
     }
 
     protected static Lookup rewrite(Expression expression, NodePath path) throws XPathException {
-        ArrayList<Expression> eqArgs = new ArrayList<Expression>(2);
+        ArrayList<Expression> eqArgs = new ArrayList<>(2);
         if (expression instanceof GeneralComparison) {
             GeneralComparison comparison = (GeneralComparison) expression;
             eqArgs.add(comparison.getLeft());
             eqArgs.add(comparison.getRight());
             Lookup func = Lookup.create(comparison.getContext(), getOperator(expression), path);
-            func.setArguments(eqArgs);
-            return func;
+            if (func != null) {
+                func.setArguments(eqArgs);
+                return func;
+            }
+
         } else if (expression instanceof InternalFunctionCall) {
             InternalFunctionCall fcall = (InternalFunctionCall) expression;
             Function function = fcall.getFunction();
-            if (function instanceof Lookup) {
-                if (function.isCalledAs("matches")) {
-                    eqArgs.add(function.getArgument(0));
-                    eqArgs.add(function.getArgument(1));
-                    Lookup func = Lookup.create(function.getContext(), RangeIndex.Operator.MATCH, path);
-                    func.setArguments(eqArgs);
-                    return func;
-                }
+            if (function != null && function instanceof Lookup) {
+                final RangeIndex.Operator operator = RangeIndex.Operator.getByName(function.getName().getLocalPart());
+                eqArgs.add(function.getArgument(0));
+                eqArgs.add(function.getArgument(1));
+                Lookup func = Lookup.create(function.getContext(), operator, path);
+                func.setArguments(eqArgs);
+                return func;
             }
         }
         return null;
@@ -256,7 +258,7 @@ public class RangeQueryRewriter extends QueryRewriter {
         if (!(parentExpr instanceof RewritableExpression)) {
             return null;
         }
-        final List<LocationStep> prevSteps = new ArrayList<LocationStep>();
+        final List<LocationStep> prevSteps = new ArrayList<>();
         prevSteps.add(current);
         RewritableExpression parent = (RewritableExpression) parentExpr;
         Expression previous = parent.getPrevious(current);

@@ -1,3 +1,24 @@
+/*
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
+ *
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 package org.exist.xqdoc.ant;
 
 import java.io.IOException;
@@ -83,20 +104,20 @@ public class XQDocTask extends AbstractXMLDBTask {
                     log("Found " + files.length + " files to upload.\n");
 
                     Path baseDir=scanner.getBasedir().toPath();
-                    for (int i = 0; i < files.length; i++) {
-                        Path file = baseDir.resolve(files[i]);
-                        log("Storing " + files[i] + " ...\n");
+                    for (String s : files) {
+                        Path file = baseDir.resolve(s);
+                        log("Storing " + s + " ...\n");
                         byte[] data = read(file);
                         try {
                             service.declareVariable("name", FileUtils.fileName(file));
                             service.declareVariable("data", data);
                             service.execute(source);
                         } catch (XMLDBException e) {
-                            String msg="XMLDB exception caught: " + e.getMessage();
-                            if(failonerror)
-                                throw new BuildException(msg,e);
+                            String msg = "XMLDB exception caught: " + e.getMessage();
+                            if (failonerror)
+                                throw new BuildException(msg, e);
                             else
-                                log(msg,e, Project.MSG_ERR);
+                                log(msg, e, Project.MSG_ERR);
                         }
                     }
                 }
@@ -120,7 +141,7 @@ public class XQDocTask extends AbstractXMLDBTask {
 
     public void addFileset(FileSet set) {
         if (fileSets == null)
-            fileSets = new ArrayList<FileSet>();
+            fileSets = new ArrayList<>();
         fileSets.add(set);
     }
 

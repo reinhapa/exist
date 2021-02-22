@@ -1,3 +1,24 @@
+/*
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
+ *
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 package org.exist.indexing.range;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -42,7 +63,7 @@ public class RangeIndexConfigElement {
 
     public RangeIndexConfigElement(Element node, Map<String, String> namespaces) throws DatabaseConfigurationException {
         String match = node.getAttribute(MATCH_ATTR);
-        if (match != null && match.length() > 0) {
+        if (match != null && !match.isEmpty()) {
             try {
                 path = new NodePath(namespaces, match);
                 if (path.length() == 0)
@@ -57,7 +78,7 @@ public class RangeIndexConfigElement {
             isQNameIndex = true;
         }
         String typeStr = node.getAttribute(TYPE_ATTR);
-        if (typeStr != null && typeStr.length() > 0) {
+        if (typeStr != null && !typeStr.isEmpty()) {
             try {
                 this.type = Type.getType(typeStr);
             } catch (XPathException e) {
@@ -68,12 +89,12 @@ public class RangeIndexConfigElement {
         parseChildren(node);
 
         String collation = node.getAttribute("collation");
-        if (collation != null && collation.length() > 0) {
+        if (collation != null && !collation.isEmpty()) {
             analyzer.addCollation(collation);
             usesCollation = true;
         }
         String nested = node.getAttribute("nested");
-        includeNested = (nested == null || nested.length() == 0 || nested.equalsIgnoreCase("yes"));
+        includeNested = (nested == null || nested.isEmpty() || nested.equalsIgnoreCase("yes"));
 
         // normalize whitespace if whitespace="normalize"
         String whitespace = node.getAttribute("whitespace");
@@ -86,19 +107,17 @@ public class RangeIndexConfigElement {
         }
 
         String caseStr = node.getAttribute("case");
-        if (caseStr != null && caseStr.length() > 0) {
+        if (caseStr != null && !caseStr.isEmpty()) {
             caseSensitive = caseStr.equalsIgnoreCase("yes");
         }
         String custom = node.getAttribute("converter");
-        if (custom != null && custom.length() > 0) {
+        if (custom != null && !custom.isEmpty()) {
             try {
                 Class customClass = Class.forName(custom);
                 typeConverter = (org.exist.indexing.range.conversion.TypeConverter) customClass.newInstance();
             } catch (ClassNotFoundException e) {
                 RangeIndex.LOG.warn("Class for custom-type not found: " + custom);
-            } catch (InstantiationException e) {
-                RangeIndex.LOG.warn("Failed to initialize custom-type: " + custom, e);
-            } catch (IllegalAccessException e) {
+            } catch (InstantiationException | IllegalAccessException e) {
                 RangeIndex.LOG.warn("Failed to initialize custom-type: " + custom, e);
             }
         }
@@ -159,9 +178,7 @@ public class RangeIndexConfigElement {
                 default:
                     return new TextField(fieldName, content, Field.Store.NO);
             }
-        } catch (NumberFormatException e) {
-            // wrong type: ignore
-        } catch (XPathException e) {
+        } catch (NumberFormatException | XPathException e) {
             // wrong type: ignore
         }
         return null;

@@ -1,23 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2011 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- *  $Id$
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery.functions.fn;
 
@@ -95,6 +95,7 @@ public class DocTest {
 
         storeResource(test, "test.xq", "BinaryResource", "application/xquery", "doc('test.xml')");
         storeResource(test, "test1.xq", "BinaryResource", "application/xquery", "doc('/test.xml')");
+        storeResource(test, "test2.xq", "BinaryResource", "application/xquery", "doc('/db/test.xml')");
 
         storeResource(existEmbeddedServer.getRoot(), "test.xml", "XMLResource", null, "<x/>");
         storeResource(test, "test.xml", "XMLResource", null, "<y/>");
@@ -124,7 +125,7 @@ public class DocTest {
     }
 
     @Test
-    public void testURIResolveWithEval() throws XPathException, XMLDBException {
+    public void testURIResolveWithEval() throws XMLDBException {
         String query = "util:eval(xs:anyURI('/db/test/test.xq'), false(), ())";
         ResourceSet result = existEmbeddedServer.executeQuery(query);
 
@@ -134,6 +135,14 @@ public class DocTest {
         assertEquals("y", n.getLocalName());
 
         query = "util:eval(xs:anyURI('/db/test/test1.xq'), false(), ())";
+        result = existEmbeddedServer.executeQuery(query);
+
+        res = (LocalXMLResource)result.getResource(0);
+        assertNotNull(res);
+        n = res.getContentAsDOM();
+        assertEquals("x", n.getLocalName());
+
+        query = "util:eval(xs:anyURI('/db/test/test2.xq'), false(), ())";
         result = existEmbeddedServer.executeQuery(query);
 
         res = (LocalXMLResource)result.getResource(0);

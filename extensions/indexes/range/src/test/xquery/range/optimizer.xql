@@ -1,3 +1,24 @@
+(:
+ : eXist-db Open Source Native XML Database
+ : Copyright (C) 2001 The eXist-db Authors
+ :
+ : info@exist-db.org
+ : http://www.exist-db.org
+ :
+ : This library is free software; you can redistribute it and/or
+ : modify it under the terms of the GNU Lesser General Public
+ : License as published by the Free Software Foundation; either
+ : version 2.1 of the License, or (at your option) any later version.
+ :
+ : This library is distributed in the hope that it will be useful,
+ : but WITHOUT ANY WARRANTY; without even the implied warranty of
+ : MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ : Lesser General Public License for more details.
+ :
+ : You should have received a copy of the GNU Lesser General Public
+ : License along with this library; if not, write to the Free Software
+ : Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ :)
 xquery version "3.0";
 
 (:~
@@ -669,7 +690,7 @@ declare
     %test:args("Млатишума")
     %test:assertEquals(2)
 function ot:eq-string-collation-with-diacritics($name) {
-    count(//tei:form[tei:orth = $name])
+    count(collection($ot:COLLECTION)//tei:form[tei:orth = $name])
 };
 
 declare
@@ -678,7 +699,7 @@ declare
     %test:args("Млатишума")
     %test:assertError("range:EXXQDYFT0001")
 function ot:contains-string-collation-with-diacritics($name) {
-    count(//tei:form[contains(tei:orth, $name)])
+    count(collection($ot:COLLECTION)//tei:form[contains(tei:orth, $name)])
 };
 
 declare
@@ -687,7 +708,7 @@ declare
     %test:args("Млатишума")
     %test:assertEquals(0)
 function ot:ne-string-collation-with-diacritics($name) {
-    count(//tei:form[tei:orth != $name])
+    count(collection($ot:COLLECTION)//tei:form[tei:orth != $name])
 };
 
 (:~ See XPath general comparison optimisation bug #2786 :)

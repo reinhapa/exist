@@ -1,3 +1,24 @@
+/*
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
+ *
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 package org.exist.xquery.functions.util;
 
 import com.googlecode.junittoolbox.ParallelRunner;
@@ -320,6 +341,44 @@ public class EvalTest {
         final ResourceSet result = existEmbeddedServer.executeQuery(query);
         final Resource r = result.getResource(0);
         assertEquals("<i>1</i><i>2</i><i>3</i><i>4</i>", r.getContent());
+    }
+
+    @Test
+    public void evalErrorInfo() {
+        final String query = "let $query := \"let $msg := 'some error message'\n" +
+                "let $code := xs:QName('some-error')\n" +
+                "return\n" +
+                "    fn:error($code, $msg)\"\n" +
+                "return\n" +
+                "    util:eval($query, false(), (), false())";
+        try {
+            existEmbeddedServer.executeQuery(query);
+
+            fail("Expected XPathException");
+
+        } catch (final XMLDBException e) {
+            assertTrue(e.getMessage().contains("line 6"));
+            assertTrue(e.getMessage().contains("column 5"));
+        }
+    }
+
+    @Test
+    public void evalPassErrorInfo() {
+        final String query = "let $query := \"let $msg := 'some error message'\n" +
+                "let $code := xs:QName('some-error')\n" +
+                "return\n" +
+                "    fn:error($code, $msg)\"\n" +
+                "return\n" +
+                "    util:eval($query, false(), (), true())";
+        try {
+            existEmbeddedServer.executeQuery(query);
+
+            fail("Expected XPathException");
+
+        } catch (final XMLDBException e) {
+            assertTrue(e.getMessage().contains("line 4"));
+            assertTrue(e.getMessage().contains("column 5"));
+        }
     }
     
     private void writeModule(Collection collection, String modulename, String module) throws XMLDBException {

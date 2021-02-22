@@ -1,23 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2010 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- *  $Id$
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.webdav;
 
@@ -108,9 +108,9 @@ public class ExistDocument extends ExistResource {
                 }
 
                 // Get meta data
-                creationTime = document.getMetadata().getCreated();
-                lastModified = document.getMetadata().getLastModified();
-                mimeType = document.getMetadata().getMimeType();
+                creationTime = document.getCreated();
+                lastModified = document.getLastModified();
+                mimeType = document.getMimeType();
 
                 // Retrieve perssions
                 permissions = document.getPermissions();
@@ -320,7 +320,7 @@ public class ExistDocument extends ExistResource {
             }
 
             // Retrieve Locktoken from document metadata
-            org.exist.dom.persistent.LockToken token = document.getMetadata().getLockToken();
+            org.exist.dom.persistent.LockToken token = document.getLockToken();
             if (token == null) {
 
                 if (LOG.isDebugEnabled()) {
@@ -366,7 +366,7 @@ public class ExistDocument extends ExistResource {
 
         // Try to get document
         try (final DBBroker broker = brokerPool.get(Optional.ofNullable(subject));
-                final LockedDocument lockedDocument = broker.getXMLResource(xmldbUri, LockMode.WRITE_LOCK);) {
+                final LockedDocument lockedDocument = broker.getXMLResource(xmldbUri, LockMode.WRITE_LOCK)) {
 
             final DocumentImpl document = lockedDocument.getDocument();
             if (document == null) {
@@ -412,7 +412,7 @@ public class ExistDocument extends ExistResource {
             inputToken.setTimeOut(LockToken.LOCK_TIMEOUT_INFINITE);
 
             // Update document
-            document.getMetadata().setLockToken(inputToken);
+            document.setLockToken(inputToken);
             document.setUserLock(subject);
 
             // Make token persistant
@@ -483,7 +483,7 @@ public class ExistDocument extends ExistResource {
 
             // Update document
             document.setUserLock(null);
-            document.getMetadata().setLockToken(null);
+            document.setLockToken(null);
 
             // Make it persistant
             broker.storeMetadata(txn, document);
@@ -640,7 +640,7 @@ public class ExistDocument extends ExistResource {
                 throw new PermissionDeniedException(userLock.getName());
             }
 
-            LockToken lockToken = document.getMetadata().getLockToken();
+            LockToken lockToken = document.getLockToken();
 
             if (!token.equals(lockToken.getOpaqueLockToken())) {
                 if (LOG.isDebugEnabled()) {

@@ -1,9 +1,28 @@
+/*
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
+ *
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 package org.exist.xquery.modules.file;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -145,7 +164,7 @@ public class Sync extends BasicFunction {
 			}
 			for (final Iterator<DocumentImpl> i = collection.iterator(context.getBroker()); i.hasNext(); ) {
 				DocumentImpl doc = i.next();
-				if (startDate == null || doc.getMetadata().getLastModified() > startDate.getTime()) {
+				if (startDate == null || doc.getLastModified() > startDate.getTime()) {
 					if (doc.getResourceType() == DocumentImpl.BINARY_FILE) {
 						saveBinary(targetDir, (BinaryDocument) doc, output);
 					} else {
@@ -176,7 +195,7 @@ public class Sync extends BasicFunction {
 		Path targetFile = targetDir.resolve(doc.getFileURI().toASCIIString());
 		final SAXSerializer sax = (SAXSerializer)SerializerPool.getInstance().borrowObject( SAXSerializer.class );
 		try {
-			if (Files.exists(targetFile) && Files.getLastModifiedTime(targetFile).compareTo(FileTime.fromMillis(doc.getMetadata().getLastModified())) >= 0) {
+			if (Files.exists(targetFile) && Files.getLastModifiedTime(targetFile).compareTo(FileTime.fromMillis(doc.getLastModified())) >= 0) {
 				return;
 			}
     	    boolean isRepoXML = Files.exists(targetFile) && FileUtils.fileName(targetFile).equals("repo.xml");
@@ -186,13 +205,13 @@ public class Sync extends BasicFunction {
 			output.addAttribute(new QName("name", XMLConstants.NULL_NS_URI), doc.getFileURI().toString());
 			output.addAttribute(new QName("collection", XMLConstants.NULL_NS_URI), doc.getCollection().getURI().toString());
 			output.addAttribute(new QName("type", XMLConstants.NULL_NS_URI), "xml");
-			output.addAttribute(new QName("modified", XMLConstants.NULL_NS_URI), new DateTimeValue(new Date(doc.getMetadata().getLastModified())).getStringValue());
+			output.addAttribute(new QName("modified", XMLConstants.NULL_NS_URI), new DateTimeValue(new Date(doc.getLastModified())).getStringValue());
             output.endElement();
 
             if (isRepoXML) {
                 processRepoDesc(targetFile, doc, sax, output);
             } else {
-				try(final Writer writer = new OutputStreamWriter(Files.newOutputStream(targetFile), "UTF-8")) {
+				try(final Writer writer = new OutputStreamWriter(new BufferedOutputStream(Files.newOutputStream(targetFile)), StandardCharsets.UTF_8)) {
 					sax.setOutput(writer, DEFAULT_PROPERTIES);
 					Serializer serializer = context.getBroker().getSerializer();
 					serializer.reset();
@@ -223,7 +242,7 @@ public class Sync extends BasicFunction {
             final DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
             final Document original = builder.parse(targetFile.toFile());
 
-            try (final Writer writer = new OutputStreamWriter(Files.newOutputStream(targetFile), "UTF-8")) {
+            try (final Writer writer = new OutputStreamWriter(new BufferedOutputStream(Files.newOutputStream(targetFile)), StandardCharsets.UTF_8)) {
                 sax.setOutput(writer, DEFAULT_PROPERTIES);
                 
                 final StreamSource stylesource = new StreamSource(Sync.class.getResourceAsStream("repo.xsl"));
@@ -254,7 +273,7 @@ public class Sync extends BasicFunction {
 	private void saveBinary(final Path targetDir, final BinaryDocument binary, final MemTreeBuilder output) {
 		final Path targetFile = targetDir.resolve(binary.getFileURI().toASCIIString());
 		try {
-			if (Files.exists(targetFile) && Files.getLastModifiedTime(targetFile).compareTo(FileTime.fromMillis(binary.getMetadata().getLastModified())) >= 0) {
+			if (Files.exists(targetFile) && Files.getLastModifiedTime(targetFile).compareTo(FileTime.fromMillis(binary.getLastModified())) >= 0) {
 				return;
 			}
 
@@ -263,7 +282,7 @@ public class Sync extends BasicFunction {
 			output.addAttribute(new QName("name"), binary.getFileURI().toString());
 			output.addAttribute(new QName("collection"), binary.getCollection().getURI().toString());
 			output.addAttribute(new QName("type"), "binary");
-			output.addAttribute(new QName("modified"), new DateTimeValue(new Date(binary.getMetadata().getLastModified())).getStringValue());
+			output.addAttribute(new QName("modified"), new DateTimeValue(new Date(binary.getLastModified())).getStringValue());
             output.endElement();
 
 			try(final InputStream is = context.getBroker().getBinaryResource(binary)) {

@@ -1,21 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2015 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.client;
 
@@ -28,15 +30,11 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.io.*;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Observable;
 import java.util.Observer;
@@ -76,6 +74,8 @@ import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 class DocumentView extends JFrame {
 
@@ -220,9 +220,7 @@ class DocumentView extends JFrame {
         item = new JMenuItem(Messages.getString("DocumentView.17"), KeyEvent.VK_S); //$NON-NLS-1$
         item.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S,
                 Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
-        item.addActionListener(e -> {
-            save();
-        });
+        item.addActionListener(e -> save());
         fileMenu.add(item);
         /*
         // Refresh
@@ -408,33 +406,31 @@ class DocumentView extends JFrame {
     }
 
     private void export() throws XMLDBException {
-        final String workDir = properties.getProperty("working-dir", System //$NON-NLS-1$
-                .getProperty("user.dir")); //$NON-NLS-1$
+        final String workDir = properties.getProperty("working-dir", System.getProperty("user.dir"));
         final JFileChooser chooser = new JFileChooser(workDir);
         chooser.setMultiSelectionEnabled(false);
         chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
         chooser.setSelectedFile(Paths.get(resource.getId()).toFile());
-        if (chooser.showDialog(this, Messages.getString("DocumentView.44")) == JFileChooser.APPROVE_OPTION) { //$NON-NLS-1$
+
+        if (chooser.showDialog(this, Messages.getString("DocumentView.44")) == JFileChooser.APPROVE_OPTION) {
             final File file = chooser.getSelectedFile();
             if (file.exists()
                     && JOptionPane.showConfirmDialog(this,
-                    Messages.getString("DocumentView.45"), Messages.getString("DocumentView.46"), //$NON-NLS-1$ //$NON-NLS-2$
+                    Messages.getString("DocumentView.45"), Messages.getString("DocumentView.46"),
                     JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) {
                 return;
             }
-            try {
-                final OutputStreamWriter writer = new OutputStreamWriter(
-                        new FileOutputStream(file), Charset.forName(properties
-                        .getProperty("encoding"))); //$NON-NLS-1$
+
+            final Charset encoding = Charset.forName(properties.getProperty("encoding"));
+            try (final Writer writer = Files.newBufferedWriter(file.toPath(), encoding)) {
                 writer.write(text.getText());
-                writer.close();
+
             } catch (final IOException e) {
-                ClientFrame.showErrorMessage(Messages.getString("DocumentView.48") //$NON-NLS-1$
-                        + e.getMessage(), e);
+                ClientFrame.showErrorMessage(Messages.getString("DocumentView.48") + e.getMessage(), e);
             }
+
             final File selectedDir = chooser.getCurrentDirectory();
-            properties
-                    .setProperty("working-dir", selectedDir.getAbsolutePath()); //$NON-NLS-1$
+            properties.setProperty("working-dir", selectedDir.getAbsolutePath());
         }
     }
 

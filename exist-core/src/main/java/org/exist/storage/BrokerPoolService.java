@@ -1,21 +1,34 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2001-2016 The eXist Project
- * http://exist-db.org
+ * Copyright (C) 2014, Evolved Binary Ltd
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * This file was originally ported from FusionDB to eXist-db by
+ * Evolved Binary, for the benefit of the eXist-db Open Source community.
+ * Only the ported code as it appears in this file, at the time that
+ * it was contributed to eXist-db, was re-licensed under The GNU
+ * Lesser General Public License v2.1 only for use in eXist-db.
  *
- * This program is distributed in the hope that it will be useful,
+ * This license grant applies only to a snapshot of the code as it
+ * appeared when ported, it does not offer or infer any rights to either
+ * updates of this source code or access to the original source code.
+ *
+ * The GNU Lesser General Public License v2.1 only license follows.
+ *
+ * ---------------------------------------------------------------------
+ *
+ * Copyright (C) 2014, Evolved Binary Ltd
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; version 2.1.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.storage;
 
@@ -26,7 +39,7 @@ import org.exist.util.Configuration;
  * Interface for a class which provides
  * services to a BrokerPool instance
  *
- * @author <a href="mailto:adam.retter@googlemail.com">Adam Retter</a>
+ * @author <a href="mailto:adam@evolvedbinary.com">Adam Retter</a>
  */
 public interface BrokerPoolService {
 
@@ -56,6 +69,22 @@ public interface BrokerPoolService {
      */
     default void prepare(final BrokerPool brokerPool) throws BrokerPoolServiceException {
         //nothing to prepare
+    }
+
+    /**
+     * Start any part of this service that should happen before
+     * system (single-user) mode.
+     *
+     * As this point the database is not generally available
+     * and the only system broker is passed to this function
+     *
+     * @param systemBroker The system mode broker
+     * @param transaction The transaction for the system service
+     *
+     * @throws BrokerPoolServiceException if an error occurs when starting the pre-system service
+     */
+    default void startPreSystem(final DBBroker systemBroker, final Txn transaction) throws BrokerPoolServiceException {
+        // nothing to start
     }
 
     /**
@@ -96,7 +125,7 @@ public interface BrokerPoolService {
 
     /**
      * Start any part of this service that should happen at the
-     * start of multi-user mode
+     * start of multi-user mode.
      *
      * As this point the database is generally available,
      * {@link #startPreMultiUserSystem(DBBroker, Txn)} has already been called
@@ -112,7 +141,45 @@ public interface BrokerPoolService {
     }
 
     /**
-     * Stop this service.
+     * Stop any part of this service that should happen at the
+     * end of multi-user mode.
+     *
+     * As this point the database is about to shutdown but has not yet
+     * transitioned to single-user mode.
+     * You may still be competing with other services and/or
+     * users for database access.
+     *
+     * @param brokerPool The multi-user available broker pool instance
+     *
+     * @throws BrokerPoolServiceException if an error occurs when stopping the multi-user service
+     */
+    default void stopMultiUser(final BrokerPool brokerPool) throws BrokerPoolServiceException {
+        //nothing to stop
+    }
+
+    /**
+     * Stop any part of this service that should happen during
+     * system (single-user) mode.
+     *
+     * By default there is nothing to stop
+     *
+     * As this point the database is not generally available
+     * and the only system broker is passed to this function
+     *
+     * @param systemBroker The system mode broker
+     *
+     * @throws BrokerPoolServiceException if an error occurs when stopping the service
+     *
+     * @deprecated Use {@link #stopSystem(DBBroker)} instead.
+     */
+    @Deprecated
+    default void stop(final DBBroker systemBroker) throws BrokerPoolServiceException {
+        stopSystem(systemBroker);
+    }
+
+    /**
+     * Stop any part of this service that should happen during
+     * system (single-user) mode.
      *
      * By default there is nothing to stop
      *
@@ -123,7 +190,7 @@ public interface BrokerPoolService {
      *
      * @throws BrokerPoolServiceException if an error occurs when stopping the service
      */
-    default void stop(final DBBroker systemBroker) throws BrokerPoolServiceException {
+    default void stopSystem(final DBBroker systemBroker) throws BrokerPoolServiceException {
         //nothing to actually stop
     }
 

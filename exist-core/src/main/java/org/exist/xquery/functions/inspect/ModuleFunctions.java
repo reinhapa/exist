@@ -1,21 +1,23 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2001-2020 The eXist-db Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery.functions.inspect;
 
@@ -30,7 +32,6 @@ import org.exist.xquery.value.*;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Iterator;
 
 import static org.exist.xquery.FunctionDSL.*;
@@ -74,26 +75,24 @@ public class ModuleFunctions extends BasicFunction {
             tempContext.setModuleLoadPath(context.getModuleLoadPath());
             tempContext.prepareForExecution();
 
-            final String uri = ((AnyURIValue)args[0]).getStringValue();
+            final AnyURIValue uri = ((AnyURIValue) args[0].itemAt(0));
 
             if (isCalledAs("module-functions")) {
                 try {
-                    final URI locationUri = new URI(AnyURIValue.escape(uri));
+                    final URI locationUri = uri.toURI();
                     final Source source = SourceFactory.getSource(context.getBroker(), tempContext.getModuleLoadPath(), locationUri.toString(), false);
                     if (source != null) {
                         tempContext.setSource(source);
                     }
-                } catch (final URISyntaxException e) {
-                    throw new XPathException(this, ErrorCodes.XQST0046, e.getMessage());
                 } catch (final IOException | PermissionDeniedException e) {
                     throw new XPathException(this, ErrorCodes.XQST0059, e.getMessage());
                 }
             }
 
             // attempt to import the module
-            Module module = null;
+            Module[] modules = null;
             try {
-                module = tempContext.importModule(null, null, uri);
+                modules = tempContext.importModule(null, null, new AnyURIValue[]{ uri });
             } catch (final XPathException e) {
                 /*
                     Error Codes from Context#importModule can be either:
@@ -113,7 +112,7 @@ public class ModuleFunctions extends BasicFunction {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("Failed to import module: " + args[0].getStringValue() + ": " + e.getMessage(), e);
                     }
-                    module = null;
+                    modules = null;
 
                 } else {
                     if (e.getLine() < 1) {
@@ -123,9 +122,13 @@ public class ModuleFunctions extends BasicFunction {
                 }
             }
 
-            if (module == null) {
+            if (modules == null || modules.length == 0) {
                 return Sequence.EMPTY_SEQUENCE;
             }
+
+            // there can be only one!
+            final Module module = modules[0];
+
             if (!module.isInternalModule()) {
                 // ensure variable declarations in the imported module are analyzed.
                 // unlike when using a normal import statement, this is not done automatically

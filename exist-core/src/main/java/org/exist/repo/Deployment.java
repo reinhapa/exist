@@ -1,21 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2015 The eXist Project
- *  http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
+ * info@exist-db.org
+ * http://www.exist-db.org
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.repo;
 
@@ -48,8 +50,8 @@ import org.exist.xquery.value.DateTimeValue;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceIterator;
 import org.exist.xquery.value.Type;
-import org.expath.pkg.repo.*;
 import org.expath.pkg.repo.Package;
+import org.expath.pkg.repo.*;
 import org.expath.pkg.repo.deps.DependencyVersion;
 import org.expath.pkg.repo.tui.BatchUserInteraction;
 import org.w3c.dom.Element;
@@ -57,6 +59,7 @@ import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.DirectoryStream;
@@ -65,7 +68,6 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -147,7 +149,7 @@ public class Deployment {
         if (!Files.isReadable(repoFile)) {
             return null;
         }
-        try(final InputStream is = Files.newInputStream(repoFile)) {
+        try(final InputStream is = new BufferedInputStream(Files.newInputStream(repoFile))) {
             return DocUtils.parse(broker.getBrokerPool(), null, is);
         } catch (final XPathException | IOException e) {
             throw new PackageException("Failed to parse repo.xml: " + e.getMessage(), e);
@@ -457,7 +459,7 @@ public class Deployment {
 
                 if (!errors.isEmpty()) {
                     throw new PackageException("Deployment incomplete, " + errors.size() + " issues found: " +
-                        errors.stream().collect(Collectors.joining("; ")));
+                            String.join("; ", errors));
                 }
                 return Optional.ofNullable(targetCollection.getCollectionPath());
             }
@@ -806,7 +808,7 @@ public class Deployment {
                             }
                         }
                         if (info != null) {
-                            info.getDocument().getMetadata().setMimeType(mime.getName());
+                            info.getDocument().setMimeType(mime.getName());
                             final Permission permission = info.getDocument().getPermissions();
                             setPermissions(broker, requestedPerms, false, mime, permission);
 
@@ -814,13 +816,13 @@ public class Deployment {
                         }
                     } else {
                         final long size = Files.size(file);
-                        try(final InputStream is = Files.newInputStream(file)) {
+                        try(final InputStream is = new BufferedInputStream(Files.newInputStream(file))) {
                             final BinaryDocument doc =
                                     targetCollection.addBinaryResource(transaction, broker, name, is, mime.getName(), size);
 
                             final Permission permission = doc.getPermissions();
                             setPermissions(broker, requestedPerms, false, mime, permission);
-                            doc.getMetadata().setMimeType(mime.getName());
+                            doc.setMimeType(mime.getName());
                             broker.storeXMLResource(transaction, doc);
                         }
                     }
@@ -835,13 +837,13 @@ public class Deployment {
     private void storeBinary(final DBBroker broker, final Txn transaction, final Collection targetCollection, final Path file, final MimeType mime, final XmldbURI name, final Optional<RequestedPerms> requestedPerms) throws
             IOException, EXistException, PermissionDeniedException, LockException, TriggerException {
         final long size = Files.size(file);
-        try (final InputStream is = Files.newInputStream(file)) {
+        try (final InputStream is = new BufferedInputStream(Files.newInputStream(file))) {
             final BinaryDocument doc =
                     targetCollection.addBinaryResource(transaction, broker, name, is, mime.getName(), size);
 
             final Permission permission = doc.getPermissions();
             setPermissions(broker, requestedPerms, false, mime, permission);
-            doc.getMetadata().setMimeType(mime.getName());
+            doc.setMimeType(mime.getName());
             broker.storeXMLResource(transaction, doc);
         }
     }

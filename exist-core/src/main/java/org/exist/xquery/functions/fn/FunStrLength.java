@@ -41,7 +41,7 @@ import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
  */
 public class FunStrLength extends Function {
 
-    public final static FunctionSignature signatures[] = {
+    public final static FunctionSignature[] signatures = {
             new FunctionSignature(
                     new QName("string-length", Function.BUILTIN_FUNCTION_NS),
                     "Returns an xs:integer equal to the length in characters of the value of the context item.\n" +
@@ -69,7 +69,8 @@ public class FunStrLength extends Function {
     protected Tuple2<Expression, Integer> strictCheckArgumentType(Expression argument,
             @Nullable final SequenceType argType, final AnalyzeContextInfo argContextInfo, final int argPosition,
             int returnType) {
-        if (getArgumentCount() == 1 && (argContextInfo.getFlags() & LocationStep.DOT_TEST) == LocationStep.DOT_TEST) {
+        if (getArgumentCount() == 1 && argContextInfo.hasFlag(LocationStep.DOT_TEST)
+                && !argContextInfo.hasFlag(Expression.IN_PREDICATE)) {
             /*
                 fn:string-length has different behaviour with regards the context item...
                 See https://www.biglist.com/lists/lists.mulberrytech.com/xsl-list/archives/201906/msg00021.html

@@ -1,23 +1,23 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2001-2007 The eXist Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *  
- * This program is distributed in the hope that it will be useful,
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *  
- *  $Id$
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery;
 
@@ -35,11 +35,12 @@ import org.exist.xquery.value.ValueSequence;
  */
 public class SequenceConstructor extends PathExpr {
 
-    public SequenceConstructor(XQueryContext context) {
+    public SequenceConstructor(final XQueryContext context) {
         super(context);
     }
 
-    public void analyze(AnalyzeContextInfo contextInfo) throws XPathException {
+    @Override
+    public void analyze(final AnalyzeContextInfo contextInfo) throws XPathException {
         contextInfo.setParent(this);
         inPredicate = (contextInfo.getFlags() & IN_PREDICATE) > 0;
         unordered = (contextInfo.getFlags() & UNORDERED) > 0;
@@ -58,20 +59,20 @@ public class SequenceConstructor extends PathExpr {
         contextInfo.setStaticReturnType(staticType);
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.Expression#eval(org.exist.dom.persistent.DocumentSet, org.exist.xquery.value.Sequence, org.exist.xquery.value.Item)
-     */
-    public Sequence eval(Sequence contextSequence, Item contextItem) throws XPathException {
+    @Override
+    public Sequence eval(final Sequence contextSequence, final Item contextItem) throws XPathException {
         if (context.getProfiler().isEnabled()) {
             context.getProfiler().start(this);
             context.getProfiler().message(this, Profiler.DEPENDENCIES,
                 "DEPENDENCIES", Dependency.getDependenciesName(this.getDependencies()));
-            if (contextSequence != null)
-                {context.getProfiler().message(this, Profiler.START_SEQUENCES,
-                    "CONTEXT SEQUENCE", contextSequence);}
-            if (contextItem != null)
-                {context.getProfiler().message(this, Profiler.START_SEQUENCES,
-                    "CONTEXT ITEM", contextItem.toSequence());}
+            if (contextSequence != null) {
+                context.getProfiler().message(this, Profiler.START_SEQUENCES,
+                    "CONTEXT SEQUENCE", contextSequence);
+            }
+            if (contextItem != null) {
+                context.getProfiler().message(this, Profiler.START_SEQUENCES,
+                    "CONTEXT ITEM", contextItem.toSequence());
+            }
         }
         final ValueSequence result = new ValueSequence();
         result.keepUnOrdered(unordered);
@@ -86,21 +87,21 @@ public class SequenceConstructor extends PathExpr {
                 context.popDocumentContext();
             }
         }
-        if (context.getProfiler().isEnabled()) 
-            {context.getProfiler().end(this, "", result);}
+        if (context.getProfiler().isEnabled()) {
+            context.getProfiler().end(this, "", result);
+        }
         return result;
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.PathExpr#dump(org.exist.xquery.util.ExpressionDumper)
-     */
-    public void dump(ExpressionDumper dumper) {
+    @Override
+    public void dump(final ExpressionDumper dumper) {
         dumper.display("(");
         dumper.startIndent();
         boolean moreThanOne = false;
         for(final Expression step : steps) {
-            if (moreThanOne)
-                {dumper.display(", ");}
+            if (moreThanOne) {
+                dumper.display(", ");
+            }
             moreThanOne = true;
             step.dump(dumper);
         }
@@ -108,13 +109,15 @@ public class SequenceConstructor extends PathExpr {
         dumper.nl().display(")");
     }
 
+    @Override
     public String toString() {
         final StringBuilder result = new StringBuilder();
         result.append("( ");
         boolean moreThanOne = false;
         for (final Expression step : steps) {
-            if (moreThanOne)
-                {result.append(", ");}
+            if (moreThanOne) {
+                result.append(", ");
+            }
             moreThanOne = true;
             result.append(step.toString());
         }
@@ -122,9 +125,23 @@ public class SequenceConstructor extends PathExpr {
         return result.toString();
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.Expression#returnsType()
+    /**
+     * Add another PathExpr to this object's expression list.
+     * Performs a static check, if return type is a function type other than array.
+     * see #id-content section 1.e.i and 1.e.ii
+     *
+     * @throws XPathException when Path returns a function type
+     * @param path A path to add to this path
      */
+    public void addPathIfNotFunction(final PathExpr path) throws XPathException {
+        final int retType = path.returnsType();
+        if (Type.subTypeOf(retType, Type.FUNCTION_REFERENCE) && retType != Type.ARRAY) {
+            throw new XPathException(path, ErrorCodes.XQTY0105, "Function types are not allowed in element content. Got " + Type.getTypeName(retType));
+        }
+        super.addPath(path);
+    }
+
+    @Override
     public int returnsType() {
         return Type.ITEM;
     }
@@ -139,10 +156,8 @@ public class SequenceConstructor extends PathExpr {
         return true;
     }
 
-    /* (non-Javadoc)
-     * @see org.exist.xquery.AbstractExpression#resetState()
-     */
-    public void resetState(boolean postOptimization) {
+    @Override
+    public void resetState(final boolean postOptimization) {
         super.resetState(postOptimization);
     }
 }

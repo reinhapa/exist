@@ -4,7 +4,7 @@ dist: bionic
 
 # NOTE: To speed up multiple builds - Docker container is only built on JDK8, dependency checks also only happen on JDK8
 
-matrix:
+jobs:
   include:
 
     - jdk: openjdk8
@@ -23,6 +23,11 @@ matrix:
       env:
         - BUILD_DOCKER=false
         - MAVEN_OPTS="-Ddependency-check.skip=true"
+        
+    - jdk: openjdk15
+      env:
+        - BUILD_DOCKER=false
+        - MAVEN_OPTS="-Ddependency-check.skip=true"
 
     - os: osx
       osx_image: xcode9.3
@@ -30,6 +35,9 @@ matrix:
         - JAVA_HOME=$(/usr/libexec/java_home)
         - BUILD_DOCKER=false
         - MAVEN_OPTS="-Ddependency-check.skip=true"
+
+  allow_failures:
+    - jdk: openjdk14  # see https://github.com/eXist-db/exist/issues/3375
 
 cache:
   directories:
@@ -46,28 +54,30 @@ after_failure:
 deploy:
 
   # Build and publish Docker Image for Docker tag `release` from updates to Git `master` branch with JDK8
+  # This step is skipped on develop branch
   - provider: script
     skip_cleanup: true
     on:
       jdk: openjdk8
       branch: master
-    script:
-      - |
-        pushd exist-docker
-        mvn -DskipTests -Ddocker.tag=release -Ddocker.username=$DOCKER_USERNAME -Ddocker.password=$DOCKER_PASSWORD docker:build docker:push
-        popd
+    script: >-
+      cd exist-docker &&
+      mvn -DskipTests -Ddocker.tag=release -Ddocker.username=$DOCKER_USERNAME -Ddocker.password=$DOCKER_PASSWORD docker:build docker:push &&
+      cd ..
+
 
   # Build and publish Docker Image for Docker tag `latest` from updates to Git `develop` branch with JDK8
+  # This step is skipped on master branch
   - provider: script
     skip_cleanup: true
     on:
       jdk: openjdk8
       branch: develop
-    script:
-      - |
-        pushd exist-docker
-        mvn -DskipTests -Ddocker.tag=latest -Ddocker.username=$DOCKER_USERNAME -Ddocker.password=$DOCKER_PASSWORD docker:build docker:push
-        popd
+    script: >-
+      cd exist-docker &&
+      mvn -DskipTests -Ddocker.tag=latest -Ddocker.username=$DOCKER_USERNAME -Ddocker.password=$DOCKER_PASSWORD docker:build docker:push &&
+      cd ..
+
 
 notifications:
   slack: exist-db:$SLACK_TOKEN

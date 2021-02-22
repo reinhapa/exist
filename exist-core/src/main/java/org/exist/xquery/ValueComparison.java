@@ -1,24 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-06 Wolfgang M. Meier
- *  wolfgang@exist-db.org
- *  http://exist.sourceforge.net
- *  
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
- *  
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
- *  
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *  
- *  $Id$
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
+ *
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery;
 
@@ -78,7 +77,7 @@ public class ValueComparison extends GeneralComparison {
             final Collator collator = getCollator(contextSequence);
 			return BooleanValue.valueOf(compareAtomic(collator, lv, rv, StringTruncationOperator.NONE, relation));
 		} 
-        throw new XPathException(this, "Type error: sequence with more than one item is not allowed here");
+        throw new XPathException(this, ErrorCodes.XPTY0004, "Type error: sequence with more than one item is not allowed here");
 	}
 
 	protected Sequence nodeSetCompare(NodeSet nodes, Sequence contextSequence) throws XPathException {		
@@ -90,14 +89,14 @@ public class ValueComparison extends GeneralComparison {
             for (final NodeProxy current : nodes) {
                 ContextItem context = current.getContext();
                 if (context == null) {
-                    throw new XPathException(this, "Context is missing for node set comparison");
+                    throw new XPathException(this, ErrorCodes.XPDY0002, "Context is missing for node set comparison");
                 }
                 do {
                     final AtomicValue lv = current.atomize();
                     final Sequence rs = getRight().eval(context.getNode().toSequence());
                     if (!rs.hasOne()) {
-                        throw new XPathException(this,
-                                "Type error: sequence with less or more than one item is not allowed here");
+                        throw new XPathException(this, ErrorCodes.XPTY0004,
+								"Type error: sequence with less or more than one item is not allowed here");
                     }
                     if (compareAtomic(collator, lv, rs.itemAt(0).atomize(), StringTruncationOperator.NONE, relation)) {
                         result.add(current);
@@ -107,8 +106,8 @@ public class ValueComparison extends GeneralComparison {
         } else {
             final Sequence rs = getRight().eval(null);
             if (!rs.hasOne())
-                {throw new XPathException(this,
-                        "Type error: sequence with less or more than one item is not allowed here");}
+                {throw new XPathException(this, ErrorCodes.XPTY0004,
+						"Type error: sequence with less or more than one item is not allowed here");}
             final AtomicValue rv = rs.itemAt(0).atomize();
             for (final NodeProxy current : nodes) {
                 final AtomicValue lv = current.atomize();

@@ -1,23 +1,23 @@
 /*
- * eXist Open Source Native XML Database
- * Copyright (C) 2004-2015 The eXist Project
- * http://exist-db.org
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *  
- * This program is distributed in the hope that it will be useful,
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *  
- *  $Id$
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery;
 
@@ -2551,6 +2551,35 @@ public class XQueryTest {
         assertEquals("/db/test/baseuri.xml", result.getResource(0).getContent().toString());
     }
 
+    /**
+     * @see <a href="https://github.com/eXist-db/exist/issues/3497">[BUG] ()/fn:base-uri() incorrectly raises XPDY0002</a>
+     */
+    @Test
+    public void resolveBaseURIErrorCases() throws XMLDBException {
+        final XPathQueryService service = (XPathQueryService) existEmbeddedServer.getRoot().getService("XPathQueryService", "1.0");
+
+        String query = "()/fn:base-uri()";
+        ResourceSet result = service.query(query);
+        assertEquals(0, result.getSize());
+
+        query = "()/base-uri(.)";
+        result = service.query(query);
+        assertEquals(0, result.getSize());
+
+        query = "base-uri(.)";
+        try {
+            result = service.query(query);
+            assertEquals(0, result.getSize());
+
+            fail("Should have raised error: XPDY0002");
+
+        } catch (final XMLDBException e) {
+            assertEquals(org.xmldb.api.base.ErrorCodes.VENDOR_ERROR, e.errorCode);
+            final Throwable cause = e.getCause();
+            assertEquals(XPathException.class, cause.getClass());
+            assertEquals(ErrorCodes.XPDY0002, ((XPathException) cause).getErrorCode());
+        }
+    }
 
     /**
      * @see http://sourceforge.net/support/tracker.php?aid=2429093

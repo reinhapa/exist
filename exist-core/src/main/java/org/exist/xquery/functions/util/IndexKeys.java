@@ -1,23 +1,23 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-09 The eXist Project
- *  http://exist-db.org
- *  
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
- *  
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
- *  
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *  
- *  $Id$
+ * eXist-db Open Source Native XML Database
+ * Copyright (C) 2001 The eXist-db Authors
+ *
+ * info@exist-db.org
+ * http://www.exist-db.org
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery.functions.util;
 
@@ -161,7 +161,7 @@ public class IndexKeys extends BasicFunction {
                 final Occurrences[] occur = indexWorker.scanIndex(context, docs, nodes, hints);
                 //TODO : add an extra argument to pass the END_VALUE ?
                 final int len = (max != -1 && occur.length > max ? max : occur.length);
-                final Sequence params[] = new Sequence[2];
+                final Sequence[] params = new Sequence[2];
                 ValueSequence data = new ValueSequence();
                 for (int j = 0; j < len; j++) {
                     params[0] = new StringValue(occur[j].getTerm().toString());
@@ -178,26 +178,26 @@ public class IndexKeys extends BasicFunction {
                 // no index specified: use the range index
             } else {
                 final Indexable indexable = (Indexable) args[1].itemAt(0);
-                ValueOccurrences occur[] = null;
+                ValueOccurrences[] occur = null;
                 // First check for indexes defined on qname
                 final QName[] allQNames = getDefinedIndexes(context.getBroker(), docs);
                 if (allQNames.length > 0) {
                     occur = context.getBroker().getValueIndex().scanIndexKeys(docs, nodes, allQNames, indexable);
                 }
                 // Also check if there's an index defined by path
-                ValueOccurrences occur2[] = context.getBroker().getValueIndex().scanIndexKeys(docs, nodes, indexable);
+                ValueOccurrences[] occur2 = context.getBroker().getValueIndex().scanIndexKeys(docs, nodes, indexable);
                 // Merge the two results
                 if (occur == null || occur.length == 0) {
                     occur = occur2;
                 } else {
-                    ValueOccurrences t[] = new ValueOccurrences[occur.length + occur2.length];
+                    ValueOccurrences[] t = new ValueOccurrences[occur.length + occur2.length];
                     System.arraycopy(occur, 0, t, 0, occur.length);
                     System.arraycopy(occur2, 0, t, occur.length, occur2.length);
                     occur = t;
                 }
 
                 final int len = (max != -1 && occur.length > max ? max : occur.length);
-                final Sequence params[] = new Sequence[2];
+                final Sequence[] params = new Sequence[2];
                 ValueSequence data = new ValueSequence();
                 for (int j = 0; j < len; j++) {
                     params[0] = occur[j].getValue();
@@ -247,7 +247,7 @@ public class IndexKeys extends BasicFunction {
                 }
             }
         }
-        final QName qnames[] = new QName[indexes.size()];
+        final QName[] qnames = new QName[indexes.size()];
         return indexes.toArray(qnames);
     }
 }
