@@ -232,19 +232,24 @@ public class LocalCollection extends AbstractLocal implements EXistCollection {
         if (id == null) {
             id = createId();
         }
+
         final XmldbURI idURI;
         try {
             idURI = XmldbURI.xmldbUriFor(id);
         } catch(final URISyntaxException e) {
             throw new XMLDBException(ErrorCodes.INVALID_URI,e);
         }
+        final R r;
         if (XMLResource.class.isAssignableFrom(type)) {
-            return (R)new LocalXMLResource(user, brokerPool, this, idURI);
+            r = (R)new LocalXMLResource(user, brokerPool, this, idURI);
         } else if (BinaryResource.class.isAssignableFrom(type)) {
-            return (R)new LocalBinaryResource(user, brokerPool, this, idURI);
+            r = (R)new LocalBinaryResource(user, brokerPool, this, idURI);
         } else {
             throw new XMLDBException(ErrorCodes.INVALID_RESOURCE, "Unknown resource type: " + type);
         }
+
+        ((AbstractEXistResource)r).isNewResource = true;
+        return r;
     }
 
     @Override

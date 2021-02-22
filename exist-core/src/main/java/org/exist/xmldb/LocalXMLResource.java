@@ -64,11 +64,7 @@ import org.exist.xquery.value.Type;
 import org.w3c.dom.DocumentType;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.xml.sax.ContentHandler;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.SAXNotRecognizedException;
-import org.xml.sax.SAXNotSupportedException;
+import org.xml.sax.*;
 import org.xml.sax.ext.LexicalHandler;
 import org.xmldb.api.base.ErrorCodes;
 import org.xmldb.api.base.XMLDBException;
@@ -657,5 +653,10 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
             super.endDocument();
             content = getWriter().toString();
         }
+    }
+
+    @Override
+    public void setXMLReader(XMLReader xmlReader) {
+        // no action
     }
 }
