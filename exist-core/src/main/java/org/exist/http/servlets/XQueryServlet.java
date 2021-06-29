@@ -74,7 +74,7 @@ import java.util.Properties;
  *
  * The servlet accepts the following initialization parameters in web.xml:
  *
- * <table border="0">
+ * <table style="border: 0">
  *  <caption>Initialization Parameters</caption>
  * 	<tr><td>user</td><td>The user identity with which the script is executed.</td></tr>
  * 	<tr><td>password</td><td>Password for the user.</td></tr>
@@ -147,7 +147,7 @@ public class XQueryServlet extends AbstractExistHttpServlet {
         if(encoding == null) {
             encoding = DEFAULT_ENCODING;
         }
-        getLog().info("encoding = " + encoding);
+        getLog().info("encoding = {}", encoding);
 
         contentType = config.getInitParameter("content-type");
         if(contentType == null) {
@@ -310,7 +310,7 @@ public class XQueryServlet extends AbstractExistHttpServlet {
 				}
                 
 			} catch (final AuthenticationException e) {
-				getLog().error("User can not be authenticated ("+username+").");
+                getLog().error("User can not be authenticated ({}).", username);
 			}
         }
         

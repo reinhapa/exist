@@ -19,39 +19,18 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-package org.exist.util.hashtable;
+package org.exist.http;
 
-import net.jcip.annotations.NotThreadSafe;
+public class MethodNotAllowedException extends Exception {
 
-import java.util.Iterator;
+    private static final long serialVersionUID = -8399138417913514619L;
 
-/**
- * Abstract base class for all hashtable implementations.
- *
- * @author Stephan Körnig
- * @author Wolfgang Meier
- */
-@NotThreadSafe
-abstract class AbstractHashtable<K, V> extends AbstractHashSet<K> {
-
-    /**
-     * Create a new hashtable with default size (1031).
-     */
-    AbstractHashtable() {
-        super();
+    public MethodNotAllowedException(String message) {
+        super(message);
     }
 
-    /**
-     * Create a new hashtable using the specified size.
-     *
-     * The actual size will be next prime number following
-     * iSize * 1.5.
-     *
-     * @param iSize The initial size of the hash table
-     */
-    AbstractHashtable(final int iSize) {
-        super(iSize);
+    public MethodNotAllowedException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    public abstract Iterator<V> valueIterator();
 }

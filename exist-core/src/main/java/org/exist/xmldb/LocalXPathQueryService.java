@@ -226,7 +226,7 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
                 return true;
             });
         }
-        LOG.debug("query took " + (System.currentTimeMillis() - start) + " ms.");
+        LOG.debug("query took {} ms.", System.currentTimeMillis() - start);
         if(result != null) {
             final Properties resourceSetProperties = new Properties(properties);
             resourceSetProperties.setProperty(EXistOutputKeys.XDM_SERIALIZATION, "yes");
@@ -289,7 +289,7 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
             try {
                 final Sequence result = xquery.execute(broker, compiled, null, properties);
                 if(LOG.isDebugEnabled()) {
-                    LOG.debug("query took " + (System.currentTimeMillis() - start) + " ms.");
+                    LOG.debug("query took {} ms.", System.currentTimeMillis() - start);
                 }
                 final Properties resourceSetProperties = new Properties(properties);
                 resourceSetProperties.setProperty(EXistOutputKeys.XDM_SERIALIZATION, "yes");
@@ -333,7 +333,7 @@ public class LocalXPathQueryService extends AbstractLocalService implements EXis
             setupContext(null, context);
             final CompiledExpression expr = xquery.compile(broker, context, query);
             if(LOG.isDebugEnabled()) {
-                LOG.debug("compilation took " + (System.currentTimeMillis() - start));
+                LOG.debug("compilation took {}", System.currentTimeMillis() - start);
             }
             return Either.Right(expr);
         } catch (final PermissionDeniedException e) {
