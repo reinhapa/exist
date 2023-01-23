@@ -51,6 +51,7 @@ public class ConfigurationUtility {
     public static final String LAUNCHER_PROPERTY_MIN_MEM = "memory.min";
     public static final String LAUNCHER_PROPERTY_VMOPTIONS = "vmoptions";
     public static final String LAUNCHER_PROPERTY_NEVER_INSTALL_SERVICE = "service.install.never";
+    public static final String LAUNCHER_PROPERTY_SERVICE_NAME = "service.name";
 
     /**
      * We try to resolve any config file relative to an eXist-db

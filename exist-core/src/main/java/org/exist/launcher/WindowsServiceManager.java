@@ -47,6 +47,7 @@ import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.exist.launcher.ConfigurationUtility.LAUNCHER_PROPERTY_MAX_MEM;
 import static org.exist.launcher.ConfigurationUtility.LAUNCHER_PROPERTY_MIN_MEM;
+import static org.exist.launcher.ConfigurationUtility.LAUNCHER_PROPERTY_SERVICE_NAME;
 
 @NotThreadSafe
 class WindowsServiceManager implements ServiceManager {
@@ -95,6 +96,7 @@ class WindowsServiceManager implements ServiceManager {
         final Properties launcherProperties = ConfigurationUtility.loadProperties();
         final Optional<String> maxMemory = Optional.ofNullable(launcherProperties.getProperty(LAUNCHER_PROPERTY_MAX_MEM)).flatMap(WindowsServiceManager::asJavaCmdlineMemoryString);
         final Optional<String> minMemory = asJavaCmdlineMemoryString(launcherProperties.getProperty(LAUNCHER_PROPERTY_MIN_MEM, "128"));
+        final String serviceName = launcherProperties.getProperty(LAUNCHER_PROPERTY_SERVICE_NAME, SERVICE_NAME);
 
         final StringBuilder jvmOptions = new StringBuilder();
         jvmOptions.append("-Dfile.encoding=UTF-8");
@@ -112,8 +114,8 @@ class WindowsServiceManager implements ServiceManager {
             }
         }
         final Path exe = prunsrvExe.get();
-        final List<String> args = newList(exe.toAbsolutePath().toString(), "install", SERVICE_NAME,
-                "--DisplayName=" + SERVICE_NAME,
+        final List<String> args = newList(exe.toAbsolutePath().toString(), "install", serviceName,
+                "--DisplayName=" + serviceName,
                 "--Description=eXist-db NoSQL Database Server",
                 "--StdError=auto",
                 "--StdOutput=auto",
