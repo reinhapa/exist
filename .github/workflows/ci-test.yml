@@ -1,5 +1,5 @@
 name: Test
-on: [push, pull_request]
+on:
 jobs:
   test:
     name: (JDK ${{ matrix.jdk }} / ${{ matrix.os }}) Test
