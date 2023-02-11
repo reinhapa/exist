@@ -194,15 +194,16 @@ public class XMLDBLoadFromPattern extends XMLDBAbstractCollectionManipulator {
                 }
 
                 //TODO  : these probably need to be encoded and checked for right mime type
-                final Resource resource = col.createResource(FileUtils.fileName(file), mimeType.getXMLDBType());
-                resource.setContent(file.toFile());
+                try (final Resource resource = col.createResource(FileUtils.fileName(file), mimeType.getXMLDBType())) {
+                    resource.setContent(file.toFile());
 
-                ((EXistResource) resource).setMimeType(mimeType.getName());
+                    ((EXistResource) resource).setMimeType(mimeType.getName());
 
-                col.storeResource(resource);
+                    col.storeResource(resource);
 
-                //TODO : use dedicated function in XmldbURI
-                stored.add(new StringValue(this, col.getName() + "/" + resource.getId()));
+                    //TODO : use dedicated function in XmldbURI
+                    stored.add(new StringValue(this, col.getName() + "/" + resource.getId()));
+                }
             } catch (final XMLDBException e) {
                 logger.error("Could not store file {}: {}", file.toAbsolutePath(), e.getMessage());
             }
