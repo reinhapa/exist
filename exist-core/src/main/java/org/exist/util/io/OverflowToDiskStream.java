@@ -48,7 +48,7 @@ final class OverflowToDiskStream extends OutputStream {
         this.overflowStreamSupplier = overflowStreamSupplier;
     }
 
-    private OutputStream switchToOverflow() throws IOException {
+    private void switchToOverflow() throws IOException {
         if (overflowOutputStream == null) {
             overflowOutputStream = overflowStreamSupplier.get();
             if (LOG.isDebugEnabled()) {
@@ -57,28 +57,15 @@ final class OverflowToDiskStream extends OutputStream {
             memoryContents.transferTo(overflowOutputStream, 0);
             memoryContents.reset();
         }
-        return overflowOutputStream;
     }
 
     @Override
     public void write(int b) throws IOException {
-        if (overflowOutputStream != null) {
-            /*
-             * if we have a overflow do no more checks
-             */
-            overflowOutputStream.write(b);
-            return;
-        }
-        if (count >= inMemorySize) {
-            switchToOverflow().write(b);
-            count++;
-            return;
-        }
         if (singleByteBuffer == null) {
             singleByteBuffer = new byte[1];
         }
         singleByteBuffer[0] = (byte) b;
-        count += memoryContents.writeAtEnd(singleByteBuffer, 0, 1);
+        write(singleByteBuffer, 0, 1);
     }
 
     @Override
@@ -97,11 +84,13 @@ final class OverflowToDiskStream extends OutputStream {
              * buffer and then write the data directly. In this way buffered streams will
              * cascade harmlessly.
              */
-            switchToOverflow().write(b, off, len);
+            switchToOverflow();
+            overflowOutputStream.write(b, off, len);
             return;
         }
         if (len > inMemorySize - count) {
-            switchToOverflow().write(b, off, len);
+            switchToOverflow();
+            overflowOutputStream.write(b, off, len);
             count += len;
             return;
         }

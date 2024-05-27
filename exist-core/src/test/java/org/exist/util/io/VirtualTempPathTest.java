@@ -76,6 +76,17 @@ public class VirtualTempPathTest {
     }
 
     @Test
+    public void newOutputStreamFromMemoryToDiskBuffer() throws IOException {
+        virtualTempPath = new VirtualTempPath(1024, temporaryFileManager);
+        OutputStream out = virtualTempPath.newOutputStream();
+
+        assertEquals(OverflowToDiskStream.class, out.getClass());
+        byte[] buf = writeTestData(out, 2123);
+
+        assertArrayEquals(buf, virtualTempPath.getBytes());
+    }
+
+    @Test
     public void newInputStreamUseEmptyInputStreamIfNotAlreadyWritten() throws IOException {
         InputStream in = virtualTempPath.newInputStream();
 

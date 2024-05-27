@@ -190,7 +190,7 @@ public final class MemoryContentsImpl implements MemoryContents {
             int currentBlock = (int) (position / BLOCK_SIZE);
             int startIndexInBlock = (int) (position - (currentBlock * (long) BLOCK_SIZE));
             while (transferred < toTransfer) {
-                int lengthInBlock = (int) min(BLOCK_SIZE - startIndexInBlock, toTransfer - transferred);
+                int lengthInBlock = (int) min((long)BLOCK_SIZE - startIndexInBlock, toTransfer - transferred);
                 byte[] block = getBlock(currentBlock);
                 target.write(block, startIndexInBlock, lengthInBlock);
                 transferred += lengthInBlock;

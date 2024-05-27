@@ -30,13 +30,15 @@ import java.io.IOException;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.easymock.EasyMock.aryEq;
 import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
-import static org.junit.Assert.assertArrayEquals;
+
 
 /**
  * @author <a href="mailto:patrick@reini.net">Patrick Reinhart</a>
@@ -85,14 +87,14 @@ public class OverflowToDiskStreamTest {
     public void close() throws IOException {
         replay(memoryContents, overflowStreamSupplier);
 
-        overflowToDiskStream.close();
+         assertThatNoException().isThrownBy(overflowToDiskStream::close);
     }
 
     @Test
     public void flush() throws IOException {
         replay(memoryContents, overflowStreamSupplier);
 
-        overflowToDiskStream.flush();
+        assertThatNoException().isThrownBy(overflowToDiskStream::flush);
     }
 
     @Test
@@ -127,7 +129,7 @@ public class OverflowToDiskStreamTest {
         public void assertClosedContent(byte[] expected, int expectedFlushes) {
             assertTrue("Stream not closed", closed);
             assertEquals(expectedFlushes, flushCount);
-            assertArrayEquals(expected, toByteArray());
+            assertThat(expected).isEqualTo(toByteArray());
         }
 
         @Override
