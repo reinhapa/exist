@@ -21,18 +21,15 @@
  */
 package org.exist.xmldb.txn.bridge;
 
-import org.exist.EXistException;
 import org.exist.security.Subject;
 import org.exist.storage.BrokerPool;
-import org.exist.storage.DBBroker;
-import org.exist.storage.txn.Txn;
 import org.exist.xmldb.*;
 import org.exist.xmldb.function.LocalXmldbFunction;
+import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.ErrorCodes;
 import org.xmldb.api.base.XMLDBException;
 
 import java.net.URISyntaxException;
-import java.util.Optional;
 
 /**
  * Avoids overlapping transactions on Collections
@@ -49,22 +46,11 @@ public class InTxnLocalCollection extends LocalCollection {
 
     @Override
     protected <R> R withDb(final LocalXmldbFunction<R> dbOperation) throws XMLDBException {
-        return withDb(brokerPool, user, dbOperation);
-    }
-
-    static <R> R withDb(final BrokerPool brokerPool, final Subject user, final LocalXmldbFunction<R> dbOperation) throws XMLDBException {
-        try (final DBBroker broker = brokerPool.get(Optional.of(user));
-             final Txn transaction = broker.continueOrBeginTransaction()) {
-            final R result = dbOperation.apply(broker, transaction);
-            transaction.commit();
-            return result;
-        } catch (final EXistException e) {
-            throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
-        }
+        return InTxnLocalOperations.withDb(brokerPool, user, dbOperation);
     }
 
     @Override
-    public org.xmldb.api.base.Collection getParentCollection() throws XMLDBException {
+    public Collection getParentCollection() throws XMLDBException {
         if(getName().equals(XmldbURI.ROOT_COLLECTION)) {
             return null;
         }
@@ -77,7 +63,7 @@ public class InTxnLocalCollection extends LocalCollection {
     }
 
     @Override
-    public org.xmldb.api.base.Collection getChildCollection(final String name) throws XMLDBException {
+    public Collection getChildCollection(final String name) throws XMLDBException {
 
         final XmldbURI childURI;
         try {

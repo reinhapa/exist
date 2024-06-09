@@ -48,7 +48,7 @@ import org.xmldb.api.base.XMLDBException;
 
 public class LocalResourceSet extends AbstractLocal implements ResourceSet {
 
-    private final static Logger LOG = LogManager.getLogger(LocalResourceSet.class);
+    private static final Logger LOG = LogManager.getLogger(LocalResourceSet.class);
 
     private final List<Object> resources = new ArrayList<>();
     private final Properties outputProperties;
@@ -223,6 +223,16 @@ public class LocalResourceSet extends AbstractLocal implements ResourceSet {
             }
             return s;
         }
+    }
+
+    @Override
+    public void close() throws XMLDBException {
+        // no acrion
+    }
+
+    @Override
+    public boolean isClosed() {
+        return false;
     }
 
     @Override

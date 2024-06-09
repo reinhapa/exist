@@ -222,4 +222,14 @@ public class MapResourceSet implements ResourceSet
             return getResource(pos++);
         }
     }
+
+    @Override
+    public boolean isClosed() {
+        return false;
+    }
+
+    @Override
+    public void close() throws XMLDBException {
+        // no action
+    }
 }
