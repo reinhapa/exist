@@ -25,7 +25,7 @@ import org.exist.test.ExistXmldbEmbeddedServer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.xmldb.api.base.Collection;
+import org.xmldb.api.base.ChildCollection;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.modules.CollectionManagementService;
@@ -46,7 +46,7 @@ public class BinaryResourceUpdateTest  {
 
     private final static String TEST_COLLECTION = "testBinaryResource";
 
-    private Collection testCollection;
+    private ChildCollection testCollection;
 
     private static final int REPEAT = 10;
 

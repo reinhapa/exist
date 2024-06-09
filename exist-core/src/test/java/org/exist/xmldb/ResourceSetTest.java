@@ -40,7 +40,7 @@ public class ResourceSetTest {
 
 	private final static String TEST_COLLECTION = "testResourceSet";
 
-	private Collection testCollection;
+	private ChildCollection testCollection;
 
 	@Before
 	public void setUp() throws Exception {

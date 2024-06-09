@@ -27,6 +27,7 @@ import java.util.Date;
 import java.util.List;
 
 import org.w3c.dom.Document;
+import org.xmldb.api.base.ChildCollection;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.ErrorCodes;
 import org.xmldb.api.base.XMLDBException;
@@ -55,12 +56,12 @@ public class RemoteCollectionManagementService extends AbstractRemoteService imp
      */
     @Deprecated
     @Override
-    public Collection createCollection(final String collName) throws XMLDBException {
+    public ChildCollection createCollection(final String collName) throws XMLDBException {
         return createCollection(collName, (Date) null);
     }
 
     @Override
-    public Collection createCollection(final XmldbURI collName) throws XMLDBException {
+    public ChildCollection createCollection(final XmldbURI collName) throws XMLDBException {
         return createCollection(collName, null);
     }
 
@@ -69,7 +70,7 @@ public class RemoteCollectionManagementService extends AbstractRemoteService imp
      */
     @Deprecated
     @Override
-    public Collection createCollection(final String collName, final Date created) throws XMLDBException {
+    public ChildCollection createCollection(final String collName, final Date created) throws XMLDBException {
         try {
             return createCollection(XmldbURI.xmldbUriFor(collName), created);
         } catch (final URISyntaxException e) {
@@ -78,7 +79,7 @@ public class RemoteCollectionManagementService extends AbstractRemoteService imp
     }
 
     @Override
-    public Collection createCollection(final XmldbURI name, final Date created) throws XMLDBException {
+    public ChildCollection createCollection(final XmldbURI name, final Date created) throws XMLDBException {
         final XmldbURI collName = resolve(name);
         final List<Object> params = new ArrayList<>();
         params.add(collName.toString());

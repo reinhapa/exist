@@ -28,6 +28,7 @@ import static org.exist.collections.CollectionConfiguration.DEFAULT_COLLECTION_C
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import org.xmldb.api.base.ChildCollection;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.ResourceSet;
 import org.xmldb.api.base.XMLDBException;
@@ -86,14 +87,15 @@ public class UnionTest {
     
     private final static String XQUERY = "/PubmedArticleSet/PubmedArticle[MedlineCitation/Article/AuthorList/Author/(ForeName|LastName) = \"Castellano\"]";
 
-    private static Collection testCollection;    
+    private static ChildCollection testCollection;
     
     @Test
     public void unionInPredicate_withoutIndex() throws XMLDBException {
          final XQueryService service = storeXMLStringAndGetQueryService(PUBMED_DOC_NAME, PUBMED);
-         final ResourceSet result = service.queryResource(PUBMED_DOC_NAME, XQUERY);
-         
-         assertEquals(1, result.getSize());
+         try (final ResourceSet result = service.queryResource(PUBMED_DOC_NAME, XQUERY)) {
+
+             assertEquals(1, result.getSize());
+         }
     }
     
     @Test
@@ -101,9 +103,10 @@ public class UnionTest {
         storeCollectionConfig();
         
         final XQueryService service = storeXMLStringAndGetQueryService(PUBMED_DOC_NAME, PUBMED);
-        final ResourceSet result = service.queryResource(PUBMED_DOC_NAME, XQUERY);
-         
-        assertEquals(1, result.getSize());
+        try (final ResourceSet result = service.queryResource(PUBMED_DOC_NAME, XQUERY)) {
+
+            assertEquals(1, result.getSize());
+        }
     }
 
     @Test
@@ -111,8 +114,9 @@ public class UnionTest {
         final XQueryService service = storeXMLStringAndGetQueryService(PUBMED_DOC_NAME, PUBMED);
         final String xquery = "doc('" + testCollection.getName() + "/" + PUBMED_DOC_NAME + "')//Language | <a/> | <b/>";
 
-        final ResourceSet results = service.query(xquery);
-        assertEquals(3, results.getSize());
+        try (final ResourceSet results = service.query(xquery)) {
+            assertEquals(3, results.getSize());
+        }
     }
     
     private void storeCollectionConfig() throws XMLDBException {
@@ -132,17 +136,17 @@ public class UnionTest {
         final int offset = collectionPath.indexOf("/") > -1 ? collectionPath.indexOf("/") : collectionPath.length();
         final String colName = collectionPath.substring(0, offset);
         
-        if(colName.length() == 0) {
+        if (colName.isEmpty()) {
             return currentCollection;
         }
         
         Collection child = currentCollection.getChildCollection(colName);
-        if(child == null) {
+        if (child == null) {
             final CollectionManagementService service = currentCollection.getService(CollectionManagementService.class);
             child = service.createCollection(colName);
         }
         
-        if(collectionPath.indexOf("/") == -1) {
+        if (collectionPath.indexOf("/") == -1) {
             return child;
         } else {
             final String subPath = collectionPath.substring(collectionPath.indexOf("/") + 1);

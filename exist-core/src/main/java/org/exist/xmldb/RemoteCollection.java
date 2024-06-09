@@ -36,6 +36,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -56,7 +57,6 @@ import org.exist.util.crypto.digest.MessageDigest;
 import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
 import org.xml.sax.InputSource;
 import org.xmldb.api.base.*;
-import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.ServiceProviderCache.ProviderRegistry;
 import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.CollectionManagementService;
@@ -74,7 +74,7 @@ import org.xmldb.api.modules.XUpdateQueryService;
  */
 public class RemoteCollection extends AbstractRemote implements EXistCollection {
 
-    protected final static Logger LOG = LogManager.getLogger(RemoteCollection.class);
+    private static final Logger LOG = LogManager.getLogger(RemoteCollection.class);
 
     // Max size of a resource to be send to the server.
     // If the resource exceeds this limit, the data is split into
@@ -82,18 +82,30 @@ public class RemoteCollection extends AbstractRemote implements EXistCollection 
     private static final int MAX_CHUNK_LENGTH = 512 * 1024; //512KB
     public static final int MAX_UPLOAD_CHUNK = 10 * 1024 * 1024; //10 MB
 
-    private final XmldbURI path;
-    private final Leasable<XmlRpcClient> leasableXmlRpcClient;
+    protected final XmldbURI path;
+    protected final Leasable<XmlRpcClient> leasableXmlRpcClient;
     private final Leasable<XmlRpcClient>.Lease xmlRpcClientLease;
     private final ServiceProviderCache serviceProviderCache = ServiceProviderCache.withRegistered(this::registerProvders);
 
     private Properties properties = new Properties();
 
-    public static RemoteCollection instance(final Leasable<XmlRpcClient> leasableXmlRpcClient, final XmldbURI path) throws XMLDBException {
-        return instance(leasableXmlRpcClient, null, path);
+    protected RemoteCollection(final Leasable<XmlRpcClient> leasableXmlRpcClient, final Leasable<XmlRpcClient>.Lease xmlRpcClientLease, final RemoteCollection parent, final XmldbURI path)  {
+        super(parent);
+        this.path = path.toCollectionPathURI();
+        this.leasableXmlRpcClient = leasableXmlRpcClient;
+        this.xmlRpcClientLease = xmlRpcClientLease;
     }
 
-    public static RemoteCollection instance(final Leasable<XmlRpcClient> leasableXmlRpcClient, final RemoteCollection parent, final XmldbURI path) throws XMLDBException {
+    public static RemoteCollection instance(final Leasable<XmlRpcClient> leasableXmlRpcClient, final XmldbURI path) throws XMLDBException {
+        return instanceIfOpen(leasableXmlRpcClient, path, xmlRpcClientLease -> new RemoteCollection(leasableXmlRpcClient, xmlRpcClientLease, null, path));
+    }
+
+    public static RemoteChildCollection instance(final Leasable<XmlRpcClient> leasableXmlRpcClient, final RemoteCollection parent, final XmldbURI path) throws XMLDBException {
+        return instanceIfOpen(leasableXmlRpcClient, path, xmlRpcClientLease -> new RemoteChildCollection(leasableXmlRpcClient, xmlRpcClientLease, parent, path));
+    }
+
+    static <R extends RemoteCollection> R instanceIfOpen(final Leasable<XmlRpcClient> leasableXmlRpcClient, final XmldbURI path, Function<Leasable<XmlRpcClient>.Lease, R> supplier) throws XMLDBException {
+        Objects.requireNonNull(leasableXmlRpcClient);
         final List<String> params = new ArrayList<>(1);
         params.add(path.toString());
 
@@ -105,24 +117,15 @@ public class RemoteCollection extends AbstractRemote implements EXistCollection 
             final boolean existsAndCanOpen = (Boolean) xmlRpcClientLease.get().execute("existsAndCanOpenCollection", params);
 
             if (existsAndCanOpen) {
-                return new RemoteCollection(leasableXmlRpcClient, xmlRpcClientLease, parent, path);
+                return supplier.apply(xmlRpcClientLease);
             } else {
                 xmlRpcClientLease.close();
                 return null;
             }
         } catch (final XmlRpcException xre) {
-            if(xmlRpcClientLease != null) {
-                xmlRpcClientLease.close();
-            }
+            xmlRpcClientLease.close();
             throw new XMLDBException(ErrorCodes.VENDOR_ERROR, xre.getMessage(), xre);
         }
-    }
-
-    private RemoteCollection(final Leasable<XmlRpcClient> leasableXmlRpcClient, final Leasable<XmlRpcClient>.Lease xmlRpcClientLease, final RemoteCollection parent, final XmldbURI path) throws XMLDBException {
-        super(parent);
-        this.path = path.toCollectionPathURI();
-        this.leasableXmlRpcClient = leasableXmlRpcClient;
-        this.xmlRpcClientLease = xmlRpcClientLease;
     }
 
     protected final Object execute(String pMethodName, List pParams) throws XMLDBException {
@@ -169,7 +172,7 @@ public class RemoteCollection extends AbstractRemote implements EXistCollection 
     }
 
     @Override
-    public Collection getChildCollection(final String name) throws XMLDBException {
+    public ChildCollection getChildCollection(final String name) throws XMLDBException {
         try {
             return getChildCollection(XmldbURI.xmldbUriFor(name));
         } catch (final URISyntaxException e) {
@@ -177,13 +180,13 @@ public class RemoteCollection extends AbstractRemote implements EXistCollection 
         }
     }
 
-    public Collection getChildCollection(final XmldbURI name) throws XMLDBException {
+    public ChildCollection getChildCollection(final XmldbURI name) throws XMLDBException {
         // AF: get the child collection refreshing cache from server if not found
         return getChildCollection(name, true);
     }
 
     // AF: NEW METHOD
-    protected Collection getChildCollection(final XmldbURI name, final boolean refreshCacheIfNotFound) throws XMLDBException {
+    protected ChildCollection getChildCollection(final XmldbURI name, final boolean refreshCacheIfNotFound) throws XMLDBException {
         return instance(leasableXmlRpcClient, this, name.numSegments() > 1 ? name : getPathURI().append(name));
     }
 
@@ -195,15 +198,6 @@ public class RemoteCollection extends AbstractRemote implements EXistCollection 
     @Override
     public String getName() throws XMLDBException {
         return path.toString();
-    }
-
-    @Override
-    public Collection getParentCollection() throws XMLDBException {
-        if (collection == null && !path.equals(XmldbURI.ROOT_COLLECTION_URI)) {
-            final XmldbURI parentUri = path.removeLastSegment();
-            return new RemoteCollection(leasableXmlRpcClient, leasableXmlRpcClient.lease(), null, parentUri);
-        }
-        return collection;
     }
 
     public String getPath() throws XMLDBException {

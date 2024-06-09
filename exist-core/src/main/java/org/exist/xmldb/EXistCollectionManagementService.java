@@ -23,6 +23,7 @@ package org.exist.xmldb;
 
 import java.util.Date;
 
+import org.xmldb.api.base.ChildCollection;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
@@ -108,7 +109,7 @@ public interface EXistCollectionManagementService extends CollectionManagementSe
      * @deprecated Use XmldbURI version instead
      */
     @Deprecated
-    Collection createCollection(String collName, Date created) throws XMLDBException;
+    ChildCollection createCollection(String collName, Date created) throws XMLDBException;
 
     /**
      * Move and/or rename a Collection.
@@ -174,7 +175,7 @@ public interface EXistCollectionManagementService extends CollectionManagementSe
      */
     void copy(XmldbURI collection, XmldbURI destination, XmldbURI newName, String preserveType) throws XMLDBException;
 
-    Collection createCollection(XmldbURI collName, Date created) throws XMLDBException;
+    ChildCollection createCollection(XmldbURI collName, Date created) throws XMLDBException;
 
     /**
      * Create a Collection.
@@ -189,7 +190,7 @@ public interface EXistCollectionManagementService extends CollectionManagementSe
      */
     @Deprecated
     @Override
-    Collection createCollection(String collName) throws XMLDBException;
+    ChildCollection createCollection(String collName) throws XMLDBException;
 
     /**
      * Create a Collection.
@@ -200,7 +201,7 @@ public interface EXistCollectionManagementService extends CollectionManagementSe
      *
      * @throws XMLDBException if an error occurs when creating the collection.
      */
-    Collection createCollection(XmldbURI collName) throws XMLDBException;
+    ChildCollection createCollection(XmldbURI collName) throws XMLDBException;
 
     /**
      * Remove a Collection.

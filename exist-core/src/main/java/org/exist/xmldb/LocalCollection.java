@@ -85,9 +85,9 @@ public class LocalCollection extends AbstractLocal implements EXistCollection {
      * (NekoHTML) instead of the XML parser. The HTML parser will normalize
      * the HTML into well-formed XML.
      */
-    public final static String NORMALIZE_HTML = "normalize-html";
+    public static final String NORMALIZE_HTML = "normalize-html";
 
-    private final static Properties defaultProperties = new Properties();
+    private static final Properties defaultProperties = new Properties();
     static {
         defaultProperties.setProperty(OutputKeys.INDENT, "yes");
         defaultProperties.setProperty(EXistOutputKeys.EXPAND_XINCLUDES, "yes");
@@ -235,7 +235,7 @@ public class LocalCollection extends AbstractLocal implements EXistCollection {
     }
 
     @Override
-    public org.xmldb.api.base.Collection getChildCollection(final String name) throws XMLDBException {
+    public ChildCollection getChildCollection(final String name) throws XMLDBException {
 
         final XmldbURI childURI;
         try {
@@ -253,7 +253,7 @@ public class LocalCollection extends AbstractLocal implements EXistCollection {
         });
 
         if(nameUri != null) {
-            return new LocalCollection(user, brokerPool, this, nameUri);
+            return new LocalChildCollection(user, brokerPool, this, nameUri);
         } else {
             return null;
         }
@@ -282,21 +282,6 @@ public class LocalCollection extends AbstractLocal implements EXistCollection {
      */
     String getName(final DBBroker broker, final Txn transaction) throws XMLDBException {
         return this.<String>read(broker, transaction).apply((collection, broker1, transaction1) -> collection.getURI().toString());
-    }
-
-    @Override
-    public org.xmldb.api.base.Collection getParentCollection() throws XMLDBException {
-        return withDb((broker, transaction) -> {
-            if (getName(broker, transaction).equals(XmldbURI.ROOT_COLLECTION)) {
-                return null;
-            }
-
-            if (collection == null) {
-                final XmldbURI parentUri = this.<XmldbURI>read(broker, transaction).apply((collection, broker1, transaction1) -> collection.getParentURI());
-                this.collection = new LocalCollection(user, brokerPool, null, parentUri);
-            }
-            return collection;
-        });
     }
 
     public String getPath() throws XMLDBException {
@@ -763,7 +748,7 @@ public class LocalCollection extends AbstractLocal implements EXistCollection {
      * @param transaction The transaction to use for the operation
      * @return A function to receive a read-only operation to perform against the collection
      */
-    private <R> FunctionE<LocalXmldbCollectionFunction<R>, R, XMLDBException> read(final DBBroker broker, final Txn transaction) throws XMLDBException {
+    <R> FunctionE<LocalXmldbCollectionFunction<R>, R, XMLDBException> read(final DBBroker broker, final Txn transaction) throws XMLDBException {
         return readOp -> this.<R>read(broker, transaction, path).apply(readOp::apply);
     }
 

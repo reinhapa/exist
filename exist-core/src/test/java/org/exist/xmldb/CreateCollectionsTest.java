@@ -47,6 +47,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.exist.samples.Samples.SAMPLES;
 
 import org.xmldb.api.DatabaseManager;
+import org.xmldb.api.base.ChildCollection;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.Service;
@@ -64,12 +65,13 @@ public class CreateCollectionsTest  {
     public void setUp() throws XMLDBException {
         //create a test collection
         final CollectionManagementService cms = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
-        final Collection test = cms.createCollection(TEST_COLLECTION);
-        final UserManagementService ums = test.getService(UserManagementService.class);
-        // change ownership to guest
-        Account guest = ums.getAccount(GUEST_DB_USER);
-        ums.chown(guest, guest.getPrimaryGroup());
-        ums.chmod("rwxrwxrwx");
+        try (final ChildCollection test = cms.createCollection(TEST_COLLECTION)) {
+            final UserManagementService ums = test.getService(UserManagementService.class);
+            // change ownership to guest
+            Account guest = ums.getAccount(GUEST_DB_USER);
+            ums.chown(guest, guest.getPrimaryGroup());
+            ums.chmod("rwxrwxrwx");
+        }
     }
 
     @After
@@ -77,12 +79,6 @@ public class CreateCollectionsTest  {
         //delete the test collection
         final CollectionManagementService cms = existEmbeddedServer.getRoot().getService(CollectionManagementService.class);
         cms.removeCollection(TEST_COLLECTION);
-    }
-
-    @Test
-    public void rootCollectionHasNoParent() throws XMLDBException {
-        final Collection root = DatabaseManager.getCollection(XmldbURI.LOCAL_DB, ADMIN_DB_USER, ADMIN_DB_PWD);
-        assertNull("root collection has no parent", root.getParentCollection());
     }
 
     @Test

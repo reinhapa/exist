@@ -28,7 +28,7 @@ import org.exist.xmldb.LocalCollection;
 import org.exist.xmldb.LocalCollectionManagementService;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xmldb.function.LocalXmldbFunction;
-import org.xmldb.api.base.Collection;
+import org.xmldb.api.base.ChildCollection;
 import org.xmldb.api.base.ErrorCodes;
 import org.xmldb.api.base.XMLDBException;
 
@@ -43,7 +43,7 @@ public class InTxnLocalCollectionManagementService extends LocalCollectionManage
     }
 
     @Override
-    public Collection createCollection(final XmldbURI name, final Date created) throws XMLDBException {
+    public ChildCollection createCollection(final XmldbURI name, final Date created) throws XMLDBException {
         final XmldbURI collName = resolve(name);
 
         withDb((broker, transaction) -> {
@@ -59,11 +59,11 @@ public class InTxnLocalCollectionManagementService extends LocalCollectionManage
             }
         });
 
-        return new InTxnLocalCollection(user, brokerPool, collection, collName);
+        return new InTxnLocalChildCollection(user, brokerPool, collection, collName);
     }
 
     @Override
     protected <R> R withDb(final LocalXmldbFunction<R> dbOperation) throws XMLDBException {
-        return InTxnLocalCollection.withDb(brokerPool, user, dbOperation);
+        return InTxnLocalOperations.withDb(brokerPool, user, dbOperation);
     }
 }

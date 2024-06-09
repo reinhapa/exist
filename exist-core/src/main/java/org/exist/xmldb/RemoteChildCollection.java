@@ -19,25 +19,26 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-package org.exist.xmldb.txn.bridge;
+package org.exist.xmldb;
 
-import org.exist.security.Subject;
-import org.exist.storage.BrokerPool;
-import org.exist.xmldb.LocalCollection;
-import org.exist.xmldb.LocalIndexQueryService;
-import org.exist.xmldb.function.LocalXmldbFunction;
+import org.apache.xmlrpc.client.XmlRpcClient;
+import org.exist.util.Leasable;
+import org.xmldb.api.base.ChildCollection;
+import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.XMLDBException;
 
-/**
- * @author Adam Retter
- */
-public class InTxnLocalIndexQueryService extends LocalIndexQueryService {
-    public InTxnLocalIndexQueryService(final Subject user, final BrokerPool pool, final LocalCollection parent) {
-        super(user, pool, parent);
+public class RemoteChildCollection extends RemoteCollection implements ChildCollection {
+
+    RemoteChildCollection(final Leasable<XmlRpcClient> leasableXmlRpcClient, final Leasable<XmlRpcClient>.Lease xmlRpcClientLease, final RemoteCollection parent, final XmldbURI path)  {
+        super(leasableXmlRpcClient, xmlRpcClientLease, parent, path);
     }
 
     @Override
-    protected <R> R withDb(final LocalXmldbFunction<R> dbOperation) throws XMLDBException {
-        return InTxnLocalOperations.withDb(brokerPool, user, dbOperation);
+    public Collection getParentCollection() throws XMLDBException {
+        if (collection == null && !path.equals(XmldbURI.ROOT_COLLECTION_URI)) {
+            final XmldbURI parentUri = path.removeLastSegment();
+            return new RemoteCollection(leasableXmlRpcClient, leasableXmlRpcClient.lease(), null, parentUri);
+        }
+        return collection;
     }
 }
