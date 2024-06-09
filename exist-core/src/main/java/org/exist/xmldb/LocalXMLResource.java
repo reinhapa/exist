@@ -25,6 +25,7 @@ import static com.evolvedbinary.j8fu.tuple.Tuple.Tuple;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.StringWriter;
@@ -57,6 +58,7 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.Txn;
 import org.exist.util.MimeType;
+import org.exist.util.StringInputSource;
 import org.exist.util.serializer.DOMSerializer;
 import org.exist.util.serializer.DOMStreamer;
 import org.exist.util.serializer.SAXSerializer;
@@ -575,6 +577,15 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
         value = null;
         inputSource = null;
         this.root = root;
+    }
+
+    @Override
+    public void setContentAsStream(final InputStream inputStream) throws XMLDBException {
+        try {
+            setContent(new StringInputSource(inputStream.readAllBytes()));
+        } catch (final IOException e) {
+            throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
+        }
     }
 
     @Override

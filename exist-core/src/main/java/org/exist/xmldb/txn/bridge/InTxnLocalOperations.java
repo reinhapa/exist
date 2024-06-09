@@ -21,23 +21,31 @@
  */
 package org.exist.xmldb.txn.bridge;
 
+import org.exist.EXistException;
 import org.exist.security.Subject;
 import org.exist.storage.BrokerPool;
-import org.exist.xmldb.LocalCollection;
-import org.exist.xmldb.LocalIndexQueryService;
+import org.exist.storage.DBBroker;
+import org.exist.storage.txn.Txn;
 import org.exist.xmldb.function.LocalXmldbFunction;
+import org.xmldb.api.base.ErrorCodes;
 import org.xmldb.api.base.XMLDBException;
 
-/**
- * @author Adam Retter
- */
-public class InTxnLocalIndexQueryService extends LocalIndexQueryService {
-    public InTxnLocalIndexQueryService(final Subject user, final BrokerPool pool, final LocalCollection parent) {
-        super(user, pool, parent);
+import java.util.Optional;
+
+final class InTxnLocalOperations {
+    private InTxnLocalOperations() {
     }
 
-    @Override
-    protected <R> R withDb(final LocalXmldbFunction<R> dbOperation) throws XMLDBException {
-        return InTxnLocalOperations.withDb(brokerPool, user, dbOperation);
+    static <R> R withDb(final BrokerPool brokerPool, final Subject user, final LocalXmldbFunction<R> dbOperation) throws XMLDBException {
+        try (final DBBroker broker = brokerPool.get(Optional.of(user));
+             final Txn transaction = broker.continueOrBeginTransaction()) {
+            final R result = dbOperation.apply(broker, transaction);
+            transaction.commit();
+            return result;
+        } catch (final EXistException e) {
+            throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
+        }
     }
+
+
 }

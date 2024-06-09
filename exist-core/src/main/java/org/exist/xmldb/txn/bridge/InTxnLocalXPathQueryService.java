@@ -38,6 +38,6 @@ public class InTxnLocalXPathQueryService extends LocalXPathQueryService {
 
     @Override
     protected <R> R withDb(final LocalXmldbFunction<R> dbOperation) throws XMLDBException {
-        return InTxnLocalCollection.withDb(brokerPool, user, dbOperation);
+        return InTxnLocalOperations.withDb(brokerPool, user, dbOperation);
     }
 }

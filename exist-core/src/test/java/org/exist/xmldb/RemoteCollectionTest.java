@@ -89,6 +89,38 @@ public class RemoteCollectionTest extends RemoteDBTest {
     }
 
     @Test
+    public void setXmlContentAsStream() throws XMLDBException {
+        final Collection collection = getCollection();
+        final String resourceName = "stream.xml";
+        final String xml = "<stream>remote XML</stream>";
+        final Resource resource = collection.createResource(resourceName, XMLResource.class);
+        resource.setContentAsStream(new UnsynchronizedByteArrayInputStream(xml.getBytes(UTF_8)));
+        collection.storeResource(resource);
+
+        final Resource storedResource = collection.getResource(resourceName);
+        assertThat(storedResource).isNotNull();
+        final Diff diff = DiffBuilder.compare(Input.fromString(xml).build())
+                .withTest(Input.fromString((String) storedResource.getContent()).build())
+                .checkForSimilar()
+                .build();
+        assertThat(diff.hasDifferences()).withFailMessage(diff.toString()).isFalse();
+    }
+
+    @Test
+    public void setBinaryContentAsStream() throws XMLDBException {
+        final Collection collection = getCollection();
+        final String resourceName = "stream.bin";
+        final byte[] content = "remote binary".getBytes(UTF_8);
+        final Resource resource = collection.createResource(resourceName, BinaryResource.class);
+        resource.setContentAsStream(new UnsynchronizedByteArrayInputStream(content));
+        collection.storeResource(resource);
+
+        final Resource storedResource = collection.getResource(resourceName);
+        assertThat(storedResource).isNotNull();
+        assertThat((byte[]) storedResource.getContent()).containsExactly(content);
+    }
+
+    @Test
     public void getServices() throws XMLDBException {
         final List<Class<? extends Service>> expectedServiceTypes = Arrays.asList(CollectionManagementService.class,
                 DatabaseInstanceManager.class, EXistCollectionManagementService.class, EXistRestoreService.class,

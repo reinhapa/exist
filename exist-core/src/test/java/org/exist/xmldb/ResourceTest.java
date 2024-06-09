@@ -85,6 +85,38 @@ public class ResourceTest {
     }
 
     @Test
+    public void setXmlContentAsStream() throws XMLDBException, XpathException, SAXException, IOException {
+        final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION);
+        assertNotNull(testCollection);
+
+        final String resourceName = "stream.xml";
+        final String xml = "<stream>local XML</stream>";
+        final Resource resource = testCollection.createResource(resourceName, XMLResource.class);
+        resource.setContentAsStream(new ByteArrayInputStream(xml.getBytes(UTF_8)));
+        testCollection.storeResource(resource);
+
+        final Resource storedResource = testCollection.getResource(resourceName);
+        assertNotNull(storedResource);
+        assertXpathEvaluatesTo("local XML", "/stream", (String) storedResource.getContent());
+    }
+
+    @Test
+    public void setBinaryContentAsStream() throws XMLDBException {
+        final Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION);
+        assertNotNull(testCollection);
+
+        final String resourceName = "stream.bin";
+        final byte[] content = "local binary".getBytes(UTF_8);
+        final Resource resource = testCollection.createResource(resourceName, BinaryResource.class);
+        resource.setContentAsStream(new ByteArrayInputStream(content));
+        testCollection.storeResource(resource);
+
+        final Resource storedResource = testCollection.getResource(resourceName);
+        assertNotNull(storedResource);
+        assertArrayEquals(content, (byte[]) storedResource.getContent());
+    }
+
+    @Test
     public void readNonExistingResource() throws XMLDBException {
         Collection testCollection = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/" + TEST_COLLECTION);
         assertNotNull(testCollection);

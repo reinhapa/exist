@@ -44,14 +44,14 @@ public abstract class AbstractRemote {
         this.collection = collection;
     }
 
-    protected XmldbURI resolve(final XmldbURI name) {
+    protected final XmldbURI resolve(final XmldbURI name) {
         if (collection != null) {
             return collection.getPathURI().resolveCollectionPath(name);
         } else {
             return name;
         }
     }
-    
+
     protected Stream<ACEAider> extractAces(final Object aclParameter) {
         return Optional.ofNullable((Object[])aclParameter)
                 .map(Arrays::stream)
@@ -62,7 +62,7 @@ public abstract class AbstractRemote {
     protected Permission getPermission(final String owner, final String group, final int mode, final Stream<ACEAider> aces) throws PermissionDeniedException {
         final Permission perm = PermissionAiderFactory.getPermission(owner, group, mode);
         if(perm instanceof ACLPermission aclPermission) {
-            for(final ACEAider ace : aces.collect(Collectors.toList())) {
+            for(final ACEAider ace : aces.toList()) {
                 aclPermission.addACE(ace.getAccessType(), ace.getTarget(), ace.getWho(), ace.getMode());
             }
         }

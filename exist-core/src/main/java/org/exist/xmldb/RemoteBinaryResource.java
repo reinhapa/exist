@@ -21,6 +21,7 @@
  */
 package org.exist.xmldb;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -33,6 +34,7 @@ import javax.annotation.Nullable;
 import org.exist.storage.blob.BlobId;
 import org.exist.util.EXistInputSource;
 import org.exist.util.MimeType;
+import org.exist.util.StringInputSource;
 import org.exist.util.crypto.digest.DigestType;
 import org.exist.util.crypto.digest.MessageDigest;
 import org.w3c.dom.DocumentType;
@@ -112,6 +114,15 @@ public class RemoteBinaryResource
         if (!super.setContentInternal(obj)) {
             throw new XMLDBException(ErrorCodes.VENDOR_ERROR,
                     "don't know how to handle value of type " + obj.getClass().getName());
+        }
+    }
+
+    @Override
+    public void setContentAsStream(final InputStream inputStream) throws XMLDBException {
+        try {
+            setContent(new StringInputSource(inputStream.readAllBytes()));
+        } catch (final IOException e) {
+            throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
         }
     }
 

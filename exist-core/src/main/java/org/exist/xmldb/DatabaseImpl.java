@@ -31,6 +31,7 @@ import org.exist.security.AuthenticationException;
 import org.exist.security.SecurityManager;
 import org.exist.security.Subject;
 import org.exist.storage.BrokerPool;
+import org.exist.storage.BrokerPoolConstants;
 import org.exist.storage.journal.Journal;
 import org.exist.util.Configuration;
 import org.exist.util.Leasable;
@@ -49,6 +50,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 
 /**
  * The XMLDB driver class for eXist. This driver manages two different
@@ -72,19 +74,19 @@ import java.util.Optional;
  */
 public class DatabaseImpl implements Database {
 
-    private final static Logger LOG = LogManager.getLogger(DatabaseImpl.class);
+    private static final Logger LOG = LogManager.getLogger(DatabaseImpl.class);
 
     //TODO : discuss about other possible values
-    protected final static String LOCAL_HOSTNAME = "";
+    protected static final String LOCAL_HOSTNAME = "";
 
-    protected final static int UNKNOWN_CONNECTION = -1;
-    protected final static int LOCAL_CONNECTION = 0;
-    protected final static int REMOTE_CONNECTION = 1;
+    protected static final int UNKNOWN_CONNECTION = -1;
+    protected static final int LOCAL_CONNECTION = 0;
+    protected static final int REMOTE_CONNECTION = 1;
 
     /**
      * Default config filename to configure an Instance
      */
-    public final static String CONF_XML = "conf.xml";
+    public static final String CONF_XML = "conf.xml";
 
     private boolean autoCreate = false;
     private String configuration = null;
@@ -116,7 +118,7 @@ public class DatabaseImpl implements Database {
         try {
             final Configuration config = new Configuration(configuration, Optional.empty());
             if (dataDir != null) {
-                config.setProperty(BrokerPool.PROPERTY_DATA_DIR, Path.of(dataDir));
+                config.setProperty(BrokerPoolConstants.PROPERTY_DATA_DIR, Path.of(dataDir));
             }
             if (journalDir != null) {
                 config.setProperty(Journal.PROPERTY_RECOVERY_JOURNAL_DIR, Path.of(journalDir));
@@ -132,43 +134,48 @@ public class DatabaseImpl implements Database {
         }
     }
 
-    /**
-     * @deprecated {@link org.exist.xmldb.DatabaseImpl#acceptsURI(org.exist.xmldb.XmldbURI)}
-     */
-    @Deprecated
-    @Override
-    public boolean acceptsURI(final String uri) throws XMLDBException {
-        try {
-            //Ugly workaround for non-URI compliant collection (resources ?) names (most likely IRIs)
-            final String newURIString = XmldbURI.recoverPseudoURIs(uri);
-            //Remember that DatabaseManager (provided in xmldb.jar) trims the leading "xmldb:" !!!
-            //... prepend it to have a real xmldb URI again...
-            final XmldbURI xmldbURI = XmldbURI.xmldbUriFor(XmldbURI.XMLDB_URI_PREFIX + newURIString);
-            return acceptsURI(xmldbURI);
-        } catch (final URISyntaxException e) {
-            //... even in the error message
-            throw new XMLDBException(ErrorCodes.INVALID_DATABASE, "xmldb URI is not well formed: " + XmldbURI.XMLDB_URI_PREFIX + uri);
-        }
+    private static XmldbURI getXmldbURI(final String uri) throws URISyntaxException {
+        //Ugly workaround for non-URI compliant collection names (most likely IRIs)
+        final String newURIString = XmldbURI.recoverPseudoURIs(uri);
+        //Remember that DatabaseManager (provided in xmldb.jar) trims the leading "xmldb:" !!!
+        //... prepend it to have a real xmldb URI again...
+        return XmldbURI.xmldbUriFor(newURIString);
     }
 
-    public boolean acceptsURI(final XmldbURI xmldbURI) throws XMLDBException {
-        //TODO : smarter processing (resources names, protocols, servers accessibility...) ? -pb
-        return true;
+    @Override
+    public boolean acceptsURI(final String uri) {
+        try {
+            return acceptsURI(getXmldbURI(uri));
+        } catch (final URISyntaxException e) {
+            //... even in the error message
+        }
+        return false;
+    }
+
+    public boolean acceptsURI(final XmldbURI xmldbURI) {
+        final String apiName = xmldbURI.getApiName();
+        return switch (apiName == null ? "" : apiName) {
+            case XmldbURI.API_LOCAL, XmldbURI.API_XMLRPC -> true;
+            default -> false;
+        };
+    }
+
+    @Override
+    public Collection getCollection(final String uri, final Properties info) throws XMLDBException {
+        try {
+            return getCollection(getXmldbURI(uri), info.getProperty("user"), info.getProperty("password"));
+        } catch (URISyntaxException e) {
+            throw new XMLDBException(ErrorCodes.INVALID_DATABASE, "xmldb URI is not well formed: " + uri);
+        }
     }
 
     /**
      * @deprecated {@link org.exist.xmldb.DatabaseImpl#getCollection(org.exist.xmldb.XmldbURI, java.lang.String, java.lang.String)}
      */
     @Deprecated
-    @Override
     public Collection getCollection(final String uri, final String user, final String password) throws XMLDBException {
         try {
-            //Ugly workaround for non-URI compliant collection names (most likely IRIs)
-            final String newURIString = XmldbURI.recoverPseudoURIs(uri);
-            //Remember that DatabaseManager (provided in xmldb.jar) trims the leading "xmldb:" !!!
-            //... prepend it to have a real xmldb URI again...
-            final XmldbURI xmldbURI = XmldbURI.xmldbUriFor(XmldbURI.XMLDB_URI_PREFIX + newURIString);
-            return getCollection(xmldbURI, user, password);
+            return getCollection(getXmldbURI(uri), user, password);
         } catch (final URISyntaxException e) {
             //... even in the error message
             throw new XMLDBException(ErrorCodes.INVALID_DATABASE, "xmldb URI is not well formed: " + XmldbURI.XMLDB_URI_PREFIX + uri);
@@ -176,18 +183,16 @@ public class DatabaseImpl implements Database {
     }
 
     public Collection getCollection(final XmldbURI xmldbURI, final String user, final String password) throws XMLDBException {
-        if (XmldbURI.API_LOCAL.equals(xmldbURI.getApiName())) {
-            return getLocalCollection(xmldbURI, user, password);
-        } else if (XmldbURI.API_XMLRPC.equals(xmldbURI.getApiName())) {
-            return getRemoteCollection(xmldbURI, user, password);
-        } else {
-            throw new XMLDBException(ErrorCodes.INVALID_DATABASE, "Unknown or unparsable API for: " + xmldbURI);
-        }
+        final String apiName = xmldbURI.getApiName();
+        return switch (apiName == null ? "" : apiName) {
+            case XmldbURI.API_LOCAL -> getLocalCollection(xmldbURI, user, password);
+            case XmldbURI.API_XMLRPC -> getRemoteCollection(xmldbURI, user, password);
+            default ->
+                    throw new XMLDBException(ErrorCodes.INVALID_DATABASE, "Unknown or unparsable API for: " + xmldbURI);
+        };
     }
 
     private Collection getLocalCollection(final XmldbURI xmldbURI, final String user, final String password) throws XMLDBException {
-        mode = LOCAL_CONNECTION;
-
         // use local database instance
         if (!BrokerPool.isConfigured(xmldbURI.getInstanceName())) {
             if (autoCreate) {
@@ -218,7 +223,6 @@ public class DatabaseImpl implements Database {
     }
 
     private Collection getRemoteCollection(final XmldbURI xmldbURI, String user, String password) throws XMLDBException {
-        mode = REMOTE_CONNECTION;
         if (user == null) {
             //TODO : read this from configuration
             user = SecurityManager.GUEST_USER;
@@ -362,14 +366,14 @@ public class DatabaseImpl implements Database {
         return currentInstanceName != null ? currentInstanceName : "exist";
     }
 
-    public final static String CREATE_DATABASE = "create-database";
-    public final static String DATABASE_ID = "database-id";
-    public final static String CONFIGURATION = "configuration";
-    public final static String DATA_DIR = "data-dir";
-    public final static String JOURNAL_DIR = "journal-dir";
-    public final static String SSL_ENABLE = "ssl-enable";
-    public final static String SSL_ALLOW_SELF_SIGNED = "ssl-allow-self-signed";
-    public final static String SSL_VERIFY_HOSTNAME = "ssl-verify-hostname";
+    public static final String CREATE_DATABASE = "create-database";
+    public static final String DATABASE_ID = "database-id";
+    public static final String CONFIGURATION = "configuration";
+    public static final String DATA_DIR = "data-dir";
+    public static final String JOURNAL_DIR = "journal-dir";
+    public static final String SSL_ENABLE = "ssl-enable";
+    public static final String SSL_ALLOW_SELF_SIGNED = "ssl-allow-self-signed";
+    public static final String SSL_VERIFY_HOSTNAME = "ssl-verify-hostname";
 
     @Override
     public String getProperty(final String property) throws XMLDBException {
@@ -378,8 +382,8 @@ public class DatabaseImpl implements Database {
 
     @Override
     public String getProperty(final String property, final String defaultValue) throws XMLDBException {
-        final String value = switch (property) {
-            case CREATE_DATABASE -> Boolean.valueOf(autoCreate).toString();
+        return switch (property) {
+            case CREATE_DATABASE -> Boolean.toString(autoCreate);
             case DATABASE_ID -> currentInstanceName;
             case CONFIGURATION -> configuration;
             case DATA_DIR -> dataDir;
@@ -389,7 +393,6 @@ public class DatabaseImpl implements Database {
             case SSL_VERIFY_HOSTNAME -> ssl_verify_hostname.toString();
             default -> defaultValue;
         };
-        return value;
     }
 
     @Override

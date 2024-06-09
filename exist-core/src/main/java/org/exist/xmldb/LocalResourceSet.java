@@ -237,6 +237,7 @@ public class LocalResourceSet extends AbstractLocal implements ResourceSet {
         resources.remove(pos);
     }
 
+    @Override
     public final boolean isClosed() {
         return closed;
     }

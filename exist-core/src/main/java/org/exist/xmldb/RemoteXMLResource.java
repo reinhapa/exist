@@ -43,6 +43,7 @@ import org.exist.Namespaces;
 import org.exist.dom.persistent.DocumentTypeImpl;
 import org.exist.util.ExistSAXParserFactory;
 import org.exist.util.MimeType;
+import org.exist.util.StringInputSource;
 import org.exist.util.io.TemporaryFileManager;
 import org.exist.util.io.VirtualTempPath;
 import org.exist.util.serializer.DOMSerializer;
@@ -306,6 +307,15 @@ public class RemoteXMLResource
         } catch (final TransformerException | IOException ioe) {
             freeResources();
             throw new XMLDBException(ErrorCodes.VENDOR_ERROR, ioe.getMessage(), ioe);
+        }
+    }
+
+    @Override
+    public void setContentAsStream(final InputStream inputStream) throws XMLDBException {
+        try {
+            setContent(new StringInputSource(inputStream.readAllBytes()));
+        } catch (final IOException e) {
+            throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
         }
     }
 

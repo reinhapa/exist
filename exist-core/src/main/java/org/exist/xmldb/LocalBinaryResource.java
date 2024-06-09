@@ -29,6 +29,7 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.blob.BlobId;
 import org.exist.util.EXistInputSource;
 import org.exist.util.FileUtils;
+import org.exist.util.StringInputSource;
 import org.exist.util.crypto.digest.DigestType;
 import org.exist.util.crypto.digest.MessageDigest;
 import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
@@ -175,6 +176,15 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
         }
 
         isExternal = true;
+    }
+
+    @Override
+    public void setContentAsStream(final InputStream inputStream) throws XMLDBException {
+        try {
+            setContent(new StringInputSource(inputStream.readAllBytes()));
+        } catch (final IOException e) {
+            throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
+        }
     }
 
     @Override
