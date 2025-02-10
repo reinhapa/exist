@@ -36,18 +36,17 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @ThreadSafe
 public class CharArrayPool {
-
     private static final int POOL_SIZE = 128;
     private static final int MAX = 128;
-    private static final ThreadLocal<char[][]> pools_ = new PoolThreadLocal();
-    private static final AtomicInteger slot_ = new AtomicInteger();
+    private static final ThreadLocal<char[][]> POOLS = ThreadLocal.withInitial(() -> new char[POOL_SIZE][]);
+    private static final AtomicInteger SLOT = new AtomicInteger();
 
     private CharArrayPool() {
     }
 
     public static char[] getCharArray(final int size) {
         if (MAX > size) {
-            final char[][] pool = pools_.get();
+            final char[][] pool = POOLS.get();
             for (int i = 0; i < pool.length; i++) {
                 if (pool[i] != null && pool[i].length == size) {
                     final char[] b = pool[i];
@@ -63,7 +62,7 @@ public class CharArrayPool {
         if (b == null || b.length > MAX) {
             return;
         }
-        final char[][] pool = pools_.get();
+        final char[][] pool = POOLS.get();
         for (int i = 0; i < pool.length; i++) {
             if (pool[i] == null) {
                 pool[i] = b;
@@ -71,17 +70,10 @@ public class CharArrayPool {
             }
         }
 
-        int s = slot_.incrementAndGet();
+        int s = SLOT.incrementAndGet();
         if (s < 0) {
             s = -s;
         }
         pool[s % pool.length] = b;
-    }
-
-    private static final class PoolThreadLocal extends ThreadLocal<char[][]> {
-        @Override
-        protected char[][] initialValue() {
-            return new char[POOL_SIZE][];
-        }
     }
 }

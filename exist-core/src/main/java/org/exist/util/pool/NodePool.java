@@ -43,9 +43,8 @@ import org.w3c.dom.Node;
  */
 @ThreadSafe
 public class NodePool {
-
     public static final int MAX_OBJECTS = 20;
-    private static final ThreadLocal<NodePool> pools = new PoolThreadLocal();
+    private static final ThreadLocal<NodePool> POOLS = ThreadLocal.withInitial(() -> new NodePool(MAX_OBJECTS));
 
     private int maxActive;
     private final Int2ObjectMap<Pool> poolMap = new Int2ObjectOpenHashMap<>(17);
@@ -55,7 +54,7 @@ public class NodePool {
     }
 
     public static NodePool getInstance() {
-        return pools.get();
+        return POOLS.get();
     }
 
     public NodeImpl borrowNode(final short key) {
@@ -97,16 +96,7 @@ public class NodePool {
         throw new IllegalStateException("Unable to create object of type " + key);
     }
 
-    private static class PoolThreadLocal extends ThreadLocal<NodePool> {
-
-        @Override
-        protected NodePool initialValue() {
-            return new NodePool(MAX_OBJECTS);
-        }
-    }
-
     private class Pool {
-
         private LinkedList<NodeImpl> stack = new LinkedList<>();
 
         public NodeImpl borrowNode(final short key) {

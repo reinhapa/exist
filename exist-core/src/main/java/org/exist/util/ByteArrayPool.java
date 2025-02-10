@@ -35,17 +35,16 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @ThreadSafe
 public class ByteArrayPool {
-
     private static final int POOL_SIZE = 32;
     private static final int MAX = 128;
-    private static final ThreadLocal<byte[][]> pools_ = new PoolThreadLocal();
-    private static AtomicInteger slot_ = new AtomicInteger();
+    private static final ThreadLocal<byte[][]> POOLS = ThreadLocal.withInitial(() -> new byte[POOL_SIZE][]);
+    private static final AtomicInteger SLOT = new AtomicInteger();
 
     private ByteArrayPool() {
     }
 
     public static byte[] getByteArray(final int size) {
-        final byte[][] pool = pools_.get();
+        final byte[][] pool = POOLS.get();
         if (size < MAX) {
             for (int i = pool.length; i-- > 0; ) {
                 if (pool[i] != null && pool[i].length == size) {
@@ -64,7 +63,7 @@ public class ByteArrayPool {
             return;
         }
         //System.out.println("releasing byte[" + b.length + "]");
-        final byte[][] pool = pools_.get();
+        final byte[][] pool = POOLS.get();
         for (int i = pool.length; i-- > 0; ) {
             if (pool[i] == null) {
                 pool[i] = b;
@@ -72,19 +71,10 @@ public class ByteArrayPool {
             }
         }
 
-        int s = slot_.incrementAndGet();
+        int s = SLOT.incrementAndGet();
         if (s < 0) {
             s = -s;
         }
         pool[s % pool.length] = b;
-    }
-
-    private static final class PoolThreadLocal extends ThreadLocal<byte[][]> {
-
-        @Override
-        protected byte[][] initialValue() {
-            return new byte[POOL_SIZE][];
-        }
-
     }
 }
