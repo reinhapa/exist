@@ -5,6 +5,10 @@ target/
 .classpath
 .project
 
+# gradle
+.gradle/
+build/
+
 # quartz artefacts
 dependency-reduced-pom.xml
 
