@@ -1,0 +1,43 @@
+name: gradle-ci
+
+on:
+  push:
+    branches: ['gradle_build']
+
+jobs:
+  build:
+    name: ${{ matrix.os }} / OpenJDK ${{ matrix.jdk }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        jdk: ['21']
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+    steps:
+    - uses: actions/checkout@v6
+    - name: Set up JDK ${{ matrix.jdk }}
+      uses: actions/setup-java@v5
+      with:
+        distribution: temurin
+        java-version: ${{ matrix.jdk }}
+        cache: gradle
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+    - name: Build with Gradle
+      run: ./gradlew cTJ
+  code_quality:
+    runs-on: ubuntu-latest
+    if: false()
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: SonarQube
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          ORG_GRADLE_PROJECT_sonarToken: ${{ secrets.SONAR_TOKEN }}
+        run: ./gradlew sonar
