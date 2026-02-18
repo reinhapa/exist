@@ -19,6 +19,12 @@
         "major"
       ],
       "automerge": false
+    },
+    {
+      "matchDepNames": [
+        "org.apache.lucene:*"
+      ],
+      "allowedVersions": "<5"
     }
   ],
   "schedule": [
