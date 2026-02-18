@@ -19,6 +19,48 @@
         "major"
       ],
       "automerge": false
+    },
+    {
+      "matchDepNames": [
+        "com.evolvedbinary.thirdparty.org.apache.xmlrpc:*"
+      ],
+      "allowedVersions": "<6"
+    },
+    {
+      "matchDepNames": [
+        "net.sf.saxon:Saxon-HE"
+      ],
+      "allowedVersions": "<10"
+    },
+    {
+      "matchDepNames": [
+        "jakarta.servlet:jakarta.servlet-api"
+      ],
+      "allowedVersions": "<6"
+    },
+    {
+      "matchDepNames": [
+        "org.apache.lucene:*"
+      ],
+      "allowedVersions": "<5"
+    },
+    {
+      "matchDepNames": [
+        "org.eclipse.jetty:*"
+      ],
+      "allowedVersions": "<12"
+    },
+    {
+      "matchDepNames": [
+        "org.exist-db:exist-saxon-regex"
+      ],
+      "allowedVersions": "<10"
+    },
+    {
+      "matchDepNames": [
+        "org.expath.http.client:http-client-java"
+      ],
+      "allowedVersions": "<1.5"
     }
   ],
   "schedule": [
