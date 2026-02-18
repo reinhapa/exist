@@ -7,6 +7,16 @@ plugins {
     id 'maven-publish'
 }
 
+configurations {
+    configureEach {
+        resolutionStrategy {
+            cacheChangingModulesFor(0, 'seconds')
+            cacheDynamicVersionsFor(0, 'seconds')
+        }
+        exclude group: 'xml-apis', module: 'xml-apis'
+    }
+}
+
 repositories {
     mavenLocal()
     mavenCentral()
@@ -45,10 +55,10 @@ publishing {
     }
 }
 
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
-tasks.withType(Javadoc) {
+tasks.withType(Javadoc).configureEach {
     options.encoding = 'UTF-8'
 }
