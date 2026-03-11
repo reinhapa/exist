@@ -102,3 +102,14 @@ dependencies {
 }
 
 description = 'eXist-db Core'
+
+compileJava {
+    //  excluded by default, as only really needed for debugging lock ownership issues
+    exclude '**/EnsureLockingAspect.java'
+}
+
+test {
+    exclude 'org/exist/collections/ConcurrencyTest.*'
+    exclude 'org/exist/xmldb/concurrent/FragmentsTest.*'
+}
+
