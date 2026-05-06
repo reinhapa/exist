@@ -20,7 +20,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
-FROM eclipse-temurin:21-jdk-noble
+FROM eclipse-temurin:21.0.10_7-jdk-noble
 RUN apt-get update && apt-get -y dist-upgrade
 RUN apt-get install -y expat fontconfig     # Install tools required by FOP
 

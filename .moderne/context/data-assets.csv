@@ -1,4 +1,5 @@
 Source path,Class name,Simple name,Asset type,Description,Fields
+extensions/modules/xslfo/src/main/java/org/exist/xquery/modules/xslfo/ApacheFopProcessorAdapter.java,org.exist.xquery.modules.xslfo.ApacheFopProcessorAdapter$FopAvalonConfigurationAdapter,FopAvalonConfigurationAdapter,Record,Record fop avalon configuration adapter with fields: avalonConfiguration,avalonConfiguration
 exist-core/src/main/java/org/exist/test/runner/XMLTestRunner.java,org.exist.test.runner.XMLTestRunner$XMLTestInfo,XMLTestInfo,Record,"Record x m l test info with fields: name, description, childNames","name, description, childNames"
 exist-core/src/main/java/org/exist/test/runner/XQueryTestRunner.java,org.exist.test.runner.XQueryTestRunner$XQueryTestInfo,XQueryTestInfo,Record,"Record x query test info with fields: prefix, namespace, testFunctions","prefix, namespace, testFunctions"
 exist-core/src/main/java/org/exist/test/runner/XQueryTestRunner.java,org.exist.test.runner.XQueryTestRunner$XQueryTestInfo$TestFunctionDef,TestFunctionDef,Record,"Record test function def with fields: localName, arity","localName, arity"
@@ -6,7 +7,6 @@ exist-core/src/main/java/org/exist/xquery/functions/system/KillRunningXQuery.jav
 exist-core/src/main/java/org/exist/xquery/PerformanceStatsImpl.java,org.exist.xquery.PerformanceStatsImpl$OptimizationStats,OptimizationStats,Record,"Record optimization stats with fields: source, type, line, column","source, type, line, column"
 exist-core/src/main/java/org/exist/xquery/CompiledXQuery.java,org.exist.xquery.CompiledXQuery,CompiledXQuery,DTO,DTO compiled x query,
 exist-core/src/main/java/org/exist/xquery/XQuery.java,org.exist.xquery.XQuery,XQuery,DTO,DTO x query with fields: LOG,LOG
-exist-core/src/main/java/org/exist/xmlrpc/RpcAPI.java,org.exist.xmlrpc.RpcAPI$RestoreTaskEvent,RestoreTaskEvent,DTO,DTO restore task event with fields: code,code
 exist-core/src/main/java/org/exist/debugger/Response.java,org.exist.debugger.Response,Response,DTO,DTO response,
 exist-core/src/main/java/org/exist/http/Response.java,org.exist.http.Response,Response,DTO,"DTO response with fields: stdHeaders, code, statusDesc, content, binaryContent and 2 more","stdHeaders, code, statusDesc, content, binaryContent, encoding, contentType"
 exist-core/src/main/java/org/exist/http/jaxb/Query.java,org.exist.http.jaxb.Query,Query,DTO,"DTO query with fields: text, variables, properties, start, max and 7 more","text, variables, properties, start, max, enclose, wrap, method, typed, mime, cache, session"
@@ -43,4 +43,3 @@ extensions/modules/cache/src/main/java/org/exist/xquery/modules/cache/CacheConfi
 extensions/modules/expathrepo/src/main/java/org/exist/xquery/modules/expathrepo/Deploy.java,org.exist.xquery.modules.expathrepo.Deploy$RepoPackageLoader,RepoPackageLoader,Record,Record repo package loader with fields: repoURL,repoURL
 extensions/modules/mail/src/main/java/org/exist/xquery/modules/mail/SendEmailFunction.java,org.exist.xquery.modules.mail.SendEmailFunction$MailAttachment,MailAttachment,Record,"Record mail attachment with fields: filename, mimeType, data","filename, mimeType, data"
 extensions/modules/mail/src/test/java/org/exist/xquery/modules/mail/WriteMessageTest.java,org.exist.xquery.modules.mail.WriteMessageTest$Part,Part,Record,"Record part with fields: headerLines, bodyLines","headerLines, bodyLines"
-extensions/modules/xslfo/src/main/java/org/exist/xquery/modules/xslfo/ApacheFopProcessorAdapter.java,org.exist.xquery.modules.xslfo.ApacheFopProcessorAdapter$FopAvalonConfigurationAdapter,FopAvalonConfigurationAdapter,Record,Record fop avalon configuration adapter with fields: avalonConfiguration,avalonConfiguration
