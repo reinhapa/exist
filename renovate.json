@@ -1,0 +1,72 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "schedule:daily"
+  ],
+  "dependencyDashboard": true,
+  "forkProcessing": "enabled",
+  "packageRules": [
+    {
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "automerge": true
+    },
+    {
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "automerge": false
+    },
+    {
+      "matchDepNames": [
+        "com.evolvedbinary.thirdparty.org.apache.xmlrpc:*"
+      ],
+      "allowedVersions": "<6"
+    },
+    {
+      "matchDepNames": [
+        "net.sf.saxon:Saxon-HE"
+      ],
+      "allowedVersions": "<13"
+    },
+    {
+      "matchDepNames": [
+        "jakarta.servlet:jakarta.servlet-api"
+      ],
+      "allowedVersions": "<7"
+    },
+    {
+      "matchDepNames": [
+        "org.apache.lucene:*"
+      ],
+      "allowedVersions": "<11"
+    },
+    {
+      "matchDepNames": [
+        "org.eclipse.jetty:*"
+      ],
+      "allowedVersions": "<13"
+    },
+    {
+      "matchDepNames": [
+        "org.exist-db:exist-saxon-regex"
+      ],
+      "allowedVersions": "<10"
+    },
+    {
+      "matchDepNames": [
+        "org.expath.http.client:http-client-java"
+      ],
+      "allowedVersions": "<1.5"
+    }
+  ],
+  "schedule": [
+    "at any time"
+  ],
+  "maven": {
+    "enabled": false
+  }
+}
