@@ -95,6 +95,7 @@ dependencies {
     testImplementation libs.org.easymock.easymock
     testImplementation libs.org.xmlunit.xmlunit.matchers
     testImplementation libs.org.xmlunit.xmlunit.legacy
+    testImplementation libs.com.github.mizosoft.methanol.methanol
     testImplementation libs.com.googlecode.junit.toolbox.junit.toolbox
     testImplementation libs.org.apache.httpcomponents.httpclient
     testImplementation libs.org.eclipse.jetty.jetty.deploy

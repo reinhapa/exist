@@ -18,6 +18,7 @@ com-fifesoft-rsyntaxtextarea = "3.6.3"
 com-github-ben-manes-caffeine-caffeine = "3.2.4"
 com-github-h-thurow-simple-jndi = "0.25.0"
 com-github-krukow-clj-ds = "0.0.4"
+com-github-mizosoft-methanol = "1.9.0"
 com-google-code-findbugs-jsr305 = "3.0.2"
 com-googlecode-junit-toolbox-junit-toolbox = "2.4"
 com-h2database-h2 = "2.4.240"
@@ -171,6 +172,7 @@ com-fifesoft-rsyntaxtextarea = { module = "com.fifesoft:rsyntaxtextarea", versio
 com-github-ben-manes-caffeine-caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "com-github-ben-manes-caffeine-caffeine" }
 com-github-h-thurow-simple-jndi = { module = "com.github.h-thurow:simple-jndi", version.ref = "com-github-h-thurow-simple-jndi" }
 com-github-krukow-clj-ds = { module = "com.github.krukow:clj-ds", version.ref = "com-github-krukow-clj-ds" }
+com-github-mizosoft-methanol-methanol = { module = "com.github.mizosoft.methanol:methanol", version.ref = "com-github-mizosoft-methanol" }
 com-google-code-findbugs-jsr305 = { module = "com.google.code.findbugs:jsr305", version.ref = "com-google-code-findbugs-jsr305" }
 com-googlecode-junit-toolbox-junit-toolbox = { module = "com.googlecode.junit-toolbox:junit-toolbox", version.ref = "com-googlecode-junit-toolbox-junit-toolbox" }
 com-h2database-h2 = { module = "com.h2database:h2", version.ref = "com-h2database-h2" }
