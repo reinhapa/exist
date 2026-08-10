@@ -20,6 +20,7 @@ dependencies {
     testImplementation libs.org.eclipse.jetty.jetty.jmx
     testImplementation libs.junit.junit
     testImplementation project(':exist-jetty-config')
+    testImplementation testFixtures(project(':exist-core'))
     testImplementation libs.org.apache.httpcomponents.httpcore
     testImplementation libs.org.apache.httpcomponents.fluent.hc
     testImplementation libs.commons.codec.commons.codec

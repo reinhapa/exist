@@ -33,6 +33,7 @@ dependencies {
     testImplementation project(':exist-expath')
     testImplementation libs.org.eclipse.jetty.jetty.deploy
     testImplementation libs.org.eclipse.jetty.jetty.jmx
+    testImplementation testFixtures(project(':exist-core'))
     compileOnly libs.jakarta.servlet.jakarta.servlet.api
 }
 
