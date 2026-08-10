@@ -58,7 +58,7 @@
         - http://exist-db.org/exist/apps/doc/documentation.xml
 
 -->
-<exist xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../../schema/conf.xsd">
+<exist xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../schema/conf.xsd" schemaVersion="2.1.1">
 
     <!-- 
         Configures the database backend.
@@ -1014,7 +1014,7 @@
                 <parameter name="perl-path" value="/usr/bin/perl" description="file system path to the perl executable"/>
                 <parameter name="exiftool-path" value="/usr/bin/exiftool" description="file system path to the exiftool perl script"/>
             </module -->
-            <module uri="http://expath.org/ns/http-client" class="org.expath.exist.HttpClientModule"/>
+            <module uri="http://expath.org/ns/http-client" class="org.exist.xquery.modules.httpclient.HttpClientModule"/>
             <module uri="http://expath.org/ns/zip" class="org.expath.exist.ZipModule"/>
             <module uri="http://exquery.org/ns/request" class="org.exist.extensions.exquery.modules.request.RequestModule"/>
             <module uri="http://exquery.org/ns/restxq" class="org.exist.extensions.exquery.restxq.impl.xquery.RestXqModule"/>

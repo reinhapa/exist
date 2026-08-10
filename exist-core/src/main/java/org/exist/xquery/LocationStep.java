@@ -38,6 +38,8 @@ import javax.xml.stream.StreamFilter;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
+import java.util.ArrayDeque;
+import java.util.Deque;
 
 /**
  * Processes all location path steps (like descendant::*, ancestor::XXX).
@@ -56,6 +58,17 @@ public class LocationStep extends Step {
     private DocumentSet currentDocs = null;
     protected UpdateListener listener = null;
     protected Expression parent = null;
+
+    /**
+     * Whether this step is the initial (first) step of its parent expression,
+     * as determined during {@link #analyze(AnalyzeContextInfo)}. This is cached
+     * because the parent's child list may be rewritten after analysis (for
+     * example, {@link Function#checkArgument} wraps a function argument in a
+     * {@link DynamicCardinalityCheck} or type-check expression), which would
+     * otherwise make a lazy {@code parent.getSubExpression(0) == this} test in
+     * {@link #getDependencies()} report the wrong answer at evaluation time.
+     */
+    private boolean initialStep = false;
 
     //private int parentDeps = Dependency.UNKNOWN_DEPENDENCY;
     private boolean preloadedData = false;
@@ -93,10 +106,12 @@ public class LocationStep extends Step {
         int deps = Dependency.CONTEXT_SET;
 
         // self axis has an obvious dependency on the context item
-        // likewise we depend on the context item if this is a single path step (outside a predicate)
+        // likewise we depend on the context item if this is the initial step of
+        // the enclosing expression (outside a predicate). initialStep is captured
+        // during analyze, before the parent's child list may be rewritten (e.g. a
+        // function argument being wrapped in a cardinality/type check). See #6521.
         if (!this.inPredicate &&
-                (this.axis == Constants.SELF_AXIS ||
-                        (parent != null && parent.getSubExpressionCount() > 0 && parent.getSubExpression(0) == this))) {
+                (this.axis == Constants.SELF_AXIS || this.initialStep)) {
             deps = deps | Dependency.CONTEXT_ITEM;
         }
 
@@ -324,6 +339,13 @@ public class LocationStep extends Step {
 
         // TODO : log somewhere ?
         super.analyze(contextInfo);
+
+        // Capture whether this step is the initial step of its parent expression
+        // now, while the parent's child list still reflects the source structure.
+        // It may be rewritten afterwards (e.g. Function.checkArgument wrapping the
+        // argument), so deferring this test to getDependencies() is unreliable.
+        this.initialStep = parent != null && parent.getSubExpressionCount() > 0
+                && parent.getSubExpression(0) == this;
     }
 
     @Override
@@ -920,7 +942,7 @@ public class LocationStep extends Step {
                         final NodeProxy root = new NodeProxy(this, node);
                         final StreamFilter filter;
                         if (axis == Constants.PRECEDING_AXIS) {
-                            filter = new PrecedingFilter(test, root, next, result, contextId);
+                            filter = new PrecedingFilter(test, root, next, result, contextId, position);
                         } else {
                             filter = new FollowingFilter(test, root, next, result, contextId, position);
                         }
@@ -1447,12 +1469,19 @@ public class LocationStep extends Step {
     private class PrecedingFilter extends AbstractFilterBase {
         final NodeProxy root;
         final NodeProxy referenceNode;
+        // Sliding window of the most recent {@code limit} matches. Non-null only
+        // when limit > 0 (positional predicate {@code [K]} present). The K-th
+        // preceding element in axis order is the (K-th-from-end) match in doc
+        // order, so any match earlier than the K most recent cannot be selected
+        // and may be discarded as new ones are found.
+        final Deque<NodeProxy> window;
 
         PrecedingFilter(final NodeTest test, final NodeProxy root, final NodeProxy referenceNode, final NodeSet result,
-                final int contextId) {
-            super(test, result, contextId, -1);
+                final int contextId, final int limit) {
+            super(test, result, contextId, limit);
             this.root = root;
             this.referenceNode = referenceNode;
+            this.window = limit > 0 ? new ArrayDeque<>(limit) : null;
         }
 
         @Override
@@ -1461,11 +1490,16 @@ public class LocationStep extends Step {
 
             if (reader.getEventType() == XMLStreamReader.END_ELEMENT) {
                 // exited the root element, so  stop filtering
-                return currentId.getTreeLevel() != root.getNodeId().getTreeLevel();
+                if (currentId.getTreeLevel() == root.getNodeId().getTreeLevel()) {
+                    flushWindow();
+                    return false;
+                }
+                return true;
             }
 
             final NodeId refId = referenceNode.getNodeId();
             if (currentId.compareTo(refId) >= 0) {
+                flushWindow();
                 return false;
             }
 
@@ -1479,9 +1513,25 @@ public class LocationStep extends Step {
                         proxy.addContextNode(contextId, referenceNode);
                     }
                 }
-                result.add(proxy);
+                if (window != null) {
+                    if (window.size() == limit) {
+                        window.pollFirst();
+                    }
+                    window.addLast(proxy);
+                } else {
+                    result.add(proxy);
+                }
             }
             return true;
+        }
+
+        private void flushWindow() {
+            if (window != null) {
+                for (final NodeProxy proxy : window) {
+                    result.add(proxy);
+                }
+                window.clear();
+            }
         }
     }
 

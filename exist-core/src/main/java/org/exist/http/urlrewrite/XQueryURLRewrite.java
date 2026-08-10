@@ -934,7 +934,11 @@ public class XQueryURLRewrite extends HttpServlet {
     }
 
     private void declareVariables(final XQueryContext context, final SourceInfo sourceInfo, final URLRewrite staticRewrite, final String basePath, final RequestWrapper request, final HttpServletResponse response) throws XPathException {
-        final HttpRequestWrapper reqw = new HttpRequestWrapper(request, UTF_8.name(), UTF_8.name(), false);
+        // parseMultipart=true so that multipart/form-data uploads (including file parts)
+        // are exposed to controllers and RESTXQ resource functions for every HTTP method,
+        // not only POST. See https://github.com/eXist-db/exist/issues/6580 and
+        // https://github.com/eXist-db/exist/issues/6578
+        final HttpRequestWrapper reqw = new HttpRequestWrapper(request, UTF_8.name(), UTF_8.name(), true);
         final HttpResponseWrapper respw = new HttpResponseWrapper(response);
         // context.declareNamespace(RequestModule.PREFIX,
         // RequestModule.NAMESPACE_URI);
@@ -1283,15 +1287,14 @@ public class XQueryURLRewrite extends HttpServlet {
         }
 
         @Override
-        public String getHeader(final String s) {
-            if ("If-Modified-Since".equals(s) && !allowCaching) {
-                return null;
-            }
-            return super.getHeader(s);
-        }
-
-        @Override
         public long getDateHeader(final String s) {
+            // When a view is applied, allowCaching is false and we hide If-Modified-Since from the
+            // conditional-GET check (RESTServer reads it via getDateHeader): a view may have changed
+            // even when the underlying resource has not, so answering with a 304 based on the
+            // resource's timestamp would wrongly suppress the re-render. We suppress ONLY this
+            // date-header form used by that check, and deliberately do NOT override getHeader(), so
+            // application code can still read the raw If-Modified-Since value via request:get-header().
+            // See https://github.com/eXist-db/exist/issues/6603
             if ("If-Modified-Since".equals(s) && !allowCaching) {
                 return -1;
             }

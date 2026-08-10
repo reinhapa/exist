@@ -46,7 +46,7 @@
     </scm>
 
     <properties>
-        <onnxruntime.version>1.26.0</onnxruntime.version>
+        <onnxruntime.version>1.28.0</onnxruntime.version>
         <onnxruntime.artifact>onnxruntime</onnxruntime.artifact>
         <djl.tokenizers.version>0.36.0</djl.tokenizers.version>
     </properties>
@@ -78,7 +78,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.22.0</version>
+            <scope>compile</scope>
         </dependency>
 
         <dependency>
@@ -102,7 +102,7 @@
                     <argLine>--add-modules jdk.incubator.vector --enable-native-access=ALL-UNNAMED -Dfile.encoding=${project.build.sourceEncoding}</argLine>
                     <systemPropertyVariables>
                         <exist.home>${project.basedir}/../../exist-core/target/test-classes</exist.home>
-                        <log4j.configurationFile>${project.basedir}/../../exist-core/target/test-classes/log4j2.xml</log4j.configurationFile>
+                        <log4j.configurationFile>${exist.log4j.testConfigurationFile}</log4j.configurationFile>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

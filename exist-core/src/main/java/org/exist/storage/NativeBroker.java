@@ -2534,6 +2534,67 @@ public class NativeBroker implements DBBroker {
     }
 
     @Override
+    public @Nullable ExecutableResource getResourceForExecution(XmldbURI docURI) throws PermissionDeniedException {
+        if (docURI == null) {
+            return null;
+        }
+        docURI = prepend(docURI.toCollectionPathURI());
+        final XmldbURI collUri = docURI.removeLastSegment();
+        final XmldbURI docUri = docURI.lastSegment();
+        // a document is only ever resolved for execution, never for writing, so both the collection and
+        // document locks are always read locks (relativeCollectionLockMode(READ_LOCK, READ_LOCK) can only
+        // ever answer READ_LOCK)
+        try (final Collection collection = openCollection(collUri, LockMode.READ_LOCK)) {
+            if (collection == null) {
+                LOG.debug("Collection '{}' not found!", collUri);
+                return null;
+            }
+
+            try {
+                // gate on EXECUTE, not READ: the database reads the source on the caller's behalf
+                final LockedDocument lockedDocument = collection.getDocumentWithLock(this, docUri, LockMode.READ_LOCK, Permission.EXECUTE);
+
+                // NOTE: early release of Collection lock inline with Asymmetrical Locking scheme
+                collection.close();
+
+                if (lockedDocument == null) {
+                    return null;
+                }
+
+                // fail closed: an unknown subject is treated as unable to read the source
+                final Subject currentSubject = getCurrentSubject();
+                final boolean callerCanRead = currentSubject != null
+                        && lockedDocument.getDocument().getPermissions().validate(currentSubject, Permission.READ);
+                return new ExecutableResource(lockedDocument, callerCanRead);
+            } catch (final LockException e) {
+                throw new PermissionDeniedException(e);
+            }
+        }
+    }
+
+    @Override
+    public Optional<Long> getDocumentLastModified(XmldbURI docURI) throws PermissionDeniedException {
+        if (docURI == null) {
+            return Optional.empty();
+        }
+        docURI = prepend(docURI.toCollectionPathURI());
+        final XmldbURI collUri = docURI.removeLastSegment();
+        final XmldbURI docUri = docURI.lastSegment();
+        try (final Collection collection = openCollection(collUri, LockMode.READ_LOCK)) {
+            if (collection == null) {
+                return Optional.empty();
+            }
+
+            // no permission check on the document: staleness is not a permission question, and only
+            // the timestamp is handed out — see DBBroker#getDocumentLastModified
+            return collection.getDocumentLastModified(docUri);
+        } catch (final LockException e) {
+            LOG.error("Could not acquire lock on document {}", docURI, e);
+            return Optional.empty();
+        }
+    }
+
+    @Override
     public void readBinaryResource(final BinaryDocument blob, final OutputStream os)
             throws IOException {
         try (final Txn transaction = continueOrBeginTransaction()) {

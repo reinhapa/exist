@@ -38,6 +38,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.lang.ref.Cleaner;
 import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -61,6 +62,14 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class HttpRequestWrapper implements RequestWrapper {
 
     private static final Logger LOG = LogManager.getLogger(HttpRequestWrapper.class);
+
+    // HTTP methods whose request may legitimately carry a request body. GET, HEAD and DELETE are
+    // deliberately excluded: a body on those methods has no defined semantics (RFC 9110 §9.3.1),
+    // and parsing one would expose attacker-suppliable multipart content (including file uploads)
+    // to handlers not written to expect a body.
+    private static final Set<String> METHODS_WITH_REQUEST_BODY = Set.of("POST", "PUT", "PATCH");
+
+    private static final Cleaner CLEANER = Cleaner.create();
 
     private static final Path TMP_DIR;
     static {
@@ -87,7 +96,7 @@ public class HttpRequestWrapper implements RequestWrapper {
     // flag to indicate whether multipart form data was processed
     private final boolean isFormDataParsed;
 
-    @Nullable private Map<Part, Path> temporaryUploadedFilesPathCache = null;
+    private final Map<Part, Path> temporaryUploadedFilesPathCache = new HashMap<>();
 
     private boolean parsedQueryString = false;
     @Nullable private Map<String, Object> queryStringParameters = null;
@@ -135,10 +144,14 @@ public class HttpRequestWrapper implements RequestWrapper {
         this.pathInfo = servletRequest.getPathInfo();
         this.servletPath = servletRequest.getServletPath();
 
-        // Determine if request is a multipart
-
+        // Determine if request is a multipart. A multipart/form-data body may accompany any
+        // body-carrying method (e.g. PUT and PATCH, not just POST), so recognize the whole
+        // allow-list rather than POST alone — while still excluding GET/HEAD/DELETE (see
+        // METHODS_WITH_REQUEST_BODY). See https://github.com/eXist-db/exist/issues/6580 and
+        // https://github.com/eXist-db/exist/issues/6578
         @Nullable final String contentType = servletRequest.getContentType();
-        isMultipartContent = "POST".equalsIgnoreCase(servletRequest.getMethod()) && contentType != null && contentType.toLowerCase(Locale.ENGLISH).startsWith("multipart/");
+        isMultipartContent = METHODS_WITH_REQUEST_BODY.contains(servletRequest.getMethod().toUpperCase(Locale.ENGLISH))
+                && contentType != null && contentType.toLowerCase(Locale.ENGLISH).startsWith("multipart/");
 
         // Get multi-part formdata parameters when it is a mpfd request
         // and when instructed to do so
@@ -160,6 +173,10 @@ public class HttpRequestWrapper implements RequestWrapper {
         }
 
         LOG.debug("Retrieved {} parameters.", params.size());
+
+        // Delete any temporary files created for uploaded file parts once this wrapper is
+        // unreachable. The cleaning action holds only the map, never `this`.
+        CLEANER.register(this, new TemporaryUploadedFilesCleaner(temporaryUploadedFilesPathCache));
     }
 
     @Override
@@ -544,10 +561,7 @@ public class HttpRequestWrapper implements RequestWrapper {
         final List<Part> parts = getFileItem(o);
         final List<Path> files = new ArrayList<>(parts.size());
         for (final Part part : parts) {
-            Path temporaryUploadedFilePath = null;
-            if (temporaryUploadedFilesPathCache != null) {
-                temporaryUploadedFilePath = temporaryUploadedFilesPathCache.get(part);
-            }
+            Path temporaryUploadedFilePath = temporaryUploadedFilesPathCache.get(part);
 
             if (temporaryUploadedFilePath == null) {
                 try {
@@ -558,10 +572,6 @@ public class HttpRequestWrapper implements RequestWrapper {
                 } catch (final IOException e) {
                     LOG.warn(e);
                     continue;
-                }
-
-                if (temporaryUploadedFilesPathCache == null) {
-                    temporaryUploadedFilesPathCache = new HashMap<>();
                 }
 
                 temporaryUploadedFilesPathCache.put(part, temporaryUploadedFilePath);
@@ -592,6 +602,29 @@ public class HttpRequestWrapper implements RequestWrapper {
         	files.add(FilenameUtils.normalize(part.getSubmittedFileName()));
         }
         return files;
+    }
+
+    @Override
+    public List<Map<String, String>> getUploadedFileHeaders(final String name) {
+        if (!isFormDataParsed) {
+            return null;
+        }
+
+        final Object o = params.get(name);
+        if (o == null) {
+            return null;
+        }
+
+        final List<Part> parts = getFileItem(o);
+        final List<Map<String, String>> fileHeaders = new ArrayList<>(parts.size());
+        for (final Part part : parts) {
+            final Map<String, String> headers = new LinkedHashMap<>();
+            for (final String headerName : part.getHeaderNames()) {
+                headers.put(headerName, part.getHeader(headerName));
+            }
+            fileHeaders.add(headers);
+        }
+        return fileHeaders;
     }
 
     /**
@@ -928,22 +961,25 @@ public class HttpRequestWrapper implements RequestWrapper {
         return servletRequest.getRequestDispatcher(path);
     }
 
-    @Override
-    protected void finalize() {
-        if (temporaryUploadedFilesPathCache == null) {
-            return;
-        }
+    /**
+     * Deletes the temporary files created for uploaded file parts once the owning request
+     * wrapper is no longer reachable. Registered with a {@link Cleaner}; holds only the map of
+     * temporary files (never the wrapper), so it does not keep the wrapper alive.
+     */
+    private record TemporaryUploadedFilesCleaner(Map<Part, Path> temporaryUploadedFiles) implements Runnable {
 
-        for (final Map.Entry<Part, Path> temporaryUploadedFilePathCache : temporaryUploadedFilesPathCache.entrySet()) {
-            final Part part = temporaryUploadedFilePathCache.getKey();
-            try {
-                part.delete();
-            } catch (final IOException e) {
-                LOG.error("Unable to delete: {}", part.getSubmittedFileName(), e);
+        @Override
+        public void run() {
+            for (final Map.Entry<Part, Path> entry : temporaryUploadedFiles.entrySet()) {
+                final Part part = entry.getKey();
+                try {
+                    part.delete();
+                } catch (final IOException e) {
+                    LOG.error("Unable to delete: {}", part.getSubmittedFileName(), e);
+                }
+
+                FileUtils.deleteQuietly(entry.getValue());
             }
-
-            final Path temporaryFile = temporaryUploadedFilePathCache.getValue();
-            FileUtils.deleteQuietly(temporaryFile);
         }
     }
 }

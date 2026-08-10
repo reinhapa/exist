@@ -371,7 +371,9 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
     private final Lock globalXUpdateLock = new ReentrantLock();
 
     private Subject serviceModeUser = null;
-    private boolean inServiceMode = false;
+    // volatile: enterServiceMode/exitServiceMode write from the caller's thread;
+    // isInServiceMode() can be called from any thread without holding the monitor.
+    private volatile boolean inServiceMode = false;
 
     //the time that the database was started
     private final Calendar startupTime = Calendar.getInstance();
@@ -1255,6 +1257,9 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
         synchronized(this) {
             //Are there any available brokers ?
             if(inactiveBrokers.isEmpty()) {
+                if(isShuttingDownOrDown()) {
+                    throw new EXistException("BrokerPool is not operational (state: " + status.getCurrentState().name() + ")");
+                }
                 //There are no available brokers. If allowed...
                 if(brokersCount < maxBrokers)
                 //... create one
@@ -1263,7 +1268,7 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
                 } else
                     //... or wait until there is one available
                     while(inactiveBrokers.isEmpty()) {
-                        if(isShuttingDown()) {
+                        if(isShuttingDownOrDown()) {
                             throw new EXistException("BrokerPool is shutting down");
                         }
                         LOG.debug("waiting for a broker to become available");

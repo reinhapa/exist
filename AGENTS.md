@@ -20,7 +20,7 @@ JAVA_HOME=$(/usr/libexec/java_home -v 21) \
   -Pskip-build-dist-archives
 ```
 
-On macOS this still produces an unsigned DMG (`mac-dmg-on-mac` is active by default on Mac runners). Add `-P '!mac-dmg-on-mac'` to skip it.
+On macOS, `-P skip-build-dist-archives` also suppresses the `.app` bundle and DMG (sets `skip.mac.dist=true` internally). Use `-P '!mac-dmg-on-mac'` only if you want the archives but not the DMG.
 
 ### Build a single module
 
@@ -45,8 +45,7 @@ mvn test -pl exist-core -Dtest="org.exist.xquery.XPathQueryTest" -Ddependency-ch
 
 ### Distribution artifacts (zip, tar.bz2, DMG)
 
-Produces release archives and, on macOS, an unsigned DMG suitable for local testing.
-Output lands in `exist-distribution/target/`.
+Produces release archives and platform-specific packages. Output lands in `exist-distribution/target/`.
 
 ```bash
 JAVA_HOME=$(/usr/libexec/java_home -v 21) \
@@ -58,7 +57,11 @@ JAVA_HOME=$(/usr/libexec/java_home -v 21) \
   -Drevision=7.0.0-SNAPSHOT
 ```
 
-The DMG is unsigned. For the fully signed and notarized DMG used in releases, see `exist-versioning-release.md`.
+**macOS**: the `mac-dmg-on-mac` profile is active by default and produces an unsigned `.app` bundle and DMG. Suppress both with `-P '!mac-dmg-on-mac'`. For the fully signed and notarized DMG used in releases, see `exist-versioning-release.md`.
+
+**Linux**: the `mac-dmg-on-unix` profile is active by default on non-CI Linux machines (suppressed when `env.CI=true`) and produces an unsigned DMG. Requires `hfsplus-tools` (`apt-get install hfsprogs hfsplus` / `yum install hfsutils hfsplus-tools`); warns and skips gracefully if missing. Suppress with `-P '!mac-dmg-on-unix'`.
+
+Both DMG profiles are suppressed automatically by `-P skip-build-dist-archives` via the `skip.mac.dist` property.
 
 ### IzPack installer JAR
 
@@ -67,6 +70,7 @@ Produces the cross-platform installer JAR in `exist-installer/target/`.
 ```bash
 JAVA_HOME=$(/usr/libexec/java_home -v 21) \
   mvn -T1.5C clean package \
+  -Prelease-build \
   -pl exist-installer -am \
   -DskipTests \
   -Ddependency-check.skip=true \
@@ -94,8 +98,9 @@ docker run -d --name existdb -p 8080:8080 -p 8443:8443 existdb/existdb:local
 
 ### Known build issues
 
-- Full test suite can hang on flaky infrastructure tests (`MoveResourceTest`, `RenameCollectionTest`). Check with `jstack` and kill if stuck >15 min.
+- Full test suite can hang on flaky infrastructure tests (`RenameCollectionTest`). Check with `jstack` and kill if stuck >15 min.
 - `RenameCollectionTest` "Connection refused" failures are pre-existing and unrelated to XQuery changes.
+- `org.exist.xmldb.concurrent.FragmentsTest` and `org.exist.collections.ConcurrencyTest` are excluded from the surefire run (see `exist-core/pom.xml`). `FragmentsTest` hangs during BrokerPool shutdown even locally; `ConcurrencyTest` can deadlock under concurrent collection access.
 
 ## Parser (ANTLR 2)
 
@@ -138,6 +143,30 @@ ANTLR generates `XQueryParser.java`, `XQueryLexer.java`, `XQueryTreeParser.java`
 | `org.exist.storage` | Database storage layer |
 | `org.exist.dom.persistent` | Persistent DOM implementation |
 | `org.exist.dom.memtree` | In-memory DOM (for constructed nodes) |
+
+### Native config schemas (`schema/`)
+
+eXist-db's own config-file XSDs (`conf.xsd`, `collection.xconf.xsd`, `descriptor.xsd`,
+`controller-config.xsd`, `mime-types.xsd`, plus `users.xsd`/`server.xsd`/`security-manager.xsd`/
+`expath-pkg.xsd` and its extensions) live in [`schema/`](schema/) at the repo root, and are shipped
+in every distribution layout as `$EXIST_HOME/schema/` — a sibling of `etc/`, `bin/`, `lib/` (tarball,
+zip, Docker image, and the IzPack installer all include it; see `exist-distribution`/`exist-docker`/
+`exist-installer`). External tools (eXide, IDE plugins) can resolve a config file's grammar from
+this fixed location instead of vendoring their own copy.
+
+- Each XSD's `xs:schema/@version` is an independent semver line — see [`schema/README.md`](schema/README.md)
+  for the versioning policy (CI enforces a version bump on any semantic schema edit, via
+  `mvn -N xml:transform@schema-governance`, see [`schema/governance.xsl`](schema/governance.xsl)).
+- `org.exist.util.SchemaVersion`'s version constants are generated at build time from the XSDs
+  themselves (`generate-sources` phase, see `exist-core/pom.xml`'s `schema-version-codegen`
+  execution and [`schema/generate-schema-version.xsl`](schema/generate-schema-version.xsl)) — never
+  hand-edit `SchemaVersion`'s constants; bump the XSD's `xs:schema/@version` instead and the
+  constant follows automatically on the next build.
+- The 5 canonical instances (the files `pom.xml`'s `validate-canonical-instances` execution
+  validates on every `mvn validate`) are the only ones checked for drift; the ~39 test/sample
+  fixture copies scattered across module test resources (e.g. `extensions/*/src/test/resources*/conf.xml`)
+  are intentionally hand-trimmed per-module subsets, not literal copies — don't try to regenerate
+  them from canonical.
 
 ### Adding a new `fn:` function
 
@@ -275,10 +304,10 @@ Do NOT stop after reading a single context file when others are clearly relevant
 | Package Quality Metrics | Per-package coupling, stability, and dependency cycle analysis | [`package-quality-metrics.md`](.moderne/context/package-quality-metrics.md) |
 | Project Identity | Build system coordinates, names, and module structure | [`project-identity.md`](.moderne/context/project-identity.md) |
 | Scheduled Tasks | Scheduled tasks, cron jobs, and background processing | [`scheduled-tasks.md`](.moderne/context/scheduled-tasks.md) |
+| Sql Usage | Physical tables and columns each SQL statement touches, and who issues it | [`sql-usage.md`](.moderne/context/sql-usage.md) |
 | Test Coverage | Maps test methods to implementation methods they verify | [`test-coverage.md`](.moderne/context/test-coverage.md) |
 | Test Gaps | Public non-trivial methods lacking test coverage | [`test-gaps.md`](.moderne/context/test-gaps.md) |
 | Test Quality | Test quality issues that may cause flakiness or silent failures | [`test-quality.md`](.moderne/context/test-quality.md) |
-| Token Estimates | Estimated input tokens for method comprehension | [`token-estimates.md`](.moderne/context/token-estimates.md) |
 
 ### Querying Context Files
 

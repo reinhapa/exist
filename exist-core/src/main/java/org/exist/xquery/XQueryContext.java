@@ -400,6 +400,12 @@ public class XQueryContext implements BinaryValueManager, Context {
 
     private Source source = null;
 
+    /**
+     * How much of a failed execution may be disclosed to the caller. Recomputed from the current
+     * subject on every execution and never cached with the compiled query, see {@link ErrorDisclosure}.
+     */
+    private ErrorDisclosure errorDisclosure = ErrorDisclosure.FULL;
+
     private DebuggeeJoint debuggeeJoint = null;
 
     private int xqueryVersion = 31;
@@ -2983,48 +2989,13 @@ public class XQueryContext implements BinaryValueManager, Context {
     public void resolveForwardReferences() throws XPathException {
         while (!forwardReferences.isEmpty()) {
             final FunctionCall call = forwardReferences.pop();
-            final UserDefinedFunction func = call.getContext().resolveFunction(call.getQName(), call.getArgumentCount());
+            final QName qname = call.getQName();
+            final int argumentCount = call.getArgumentCount();
+            final UserDefinedFunction func = call.getContext().resolveFunction(qname, argumentCount);
 
             if (func == null) {
-                // Check if function exists at other arities to give a better error message
-                final QName qname = call.getQName();
-                final int argCount = call.getArgumentCount();
-                final XQueryContext callContext = call.getContext();
-
-                // Check local declared functions
-                final Iterator<FunctionSignature> localSigs = callContext.getSignaturesForFunction(qname);
-
-                // Also check external modules
-                final List<FunctionSignature> allSignatures = new ArrayList<>();
-                while (localSigs.hasNext()) {
-                    allSignatures.add(localSigs.next());
-                }
-
-                final Module[] modules = callContext.getModules(qname.getNamespaceURI());
-                if (modules != null) {
-                    for (final Module module : modules) {
-                        if (module != null) {
-                            final Iterator<FunctionSignature> modSigs = module.getSignaturesForFunction(qname);
-                            while (modSigs.hasNext()) {
-                                allSignatures.add(modSigs.next());
-                            }
-                        }
-                    }
-                }
-
-                if (!allSignatures.isEmpty()) {
-                    final StringBuilder msg = new StringBuilder();
-                    msg.append("Unexpectedly received ").append(argCount)
-                       .append(" parameter(s) in call to function '")
-                       .append(qname.getStringValue()).append("()'. ");
-                    msg.append("Defined function signatures are:\r\n");
-                    for (final FunctionSignature sig : allSignatures) {
-                        msg.append(sig.toString()).append("\r\n");
-                    }
-                    throw new XPathException(call, ErrorCodes.XPST0017, msg.toString());
-                }
-
-                throw new XPathException(call, ErrorCodes.XPST0017, "Call to undeclared function: " + qname.getStringValue());
+                throw new XPathException(call, ErrorCodes.XPST0017,
+                        Function.functionNotFoundErrorDescription(call.getContext(), qname, argumentCount));
             }
             call.resolveForwardReference(func);
         }
@@ -3682,6 +3653,27 @@ public class XQueryContext implements BinaryValueManager, Context {
     @Override
     public void setSource(final Source source) {
         this.source = source;
+    }
+
+    /**
+     * Get how much of a failed execution may be disclosed to the caller.
+     *
+     * @return the error disclosure level, never null
+     */
+    public ErrorDisclosure getErrorDisclosure() {
+        return errorDisclosure;
+    }
+
+    /**
+     * Set how much of a failed execution may be disclosed to the caller.
+     *
+     * This must be recomputed from the current subject on every execution — a compiled query is
+     * pooled and shared between users, so the level of a previous execution must never be reused.
+     *
+     * @param errorDisclosure the error disclosure level
+     */
+    public void setErrorDisclosure(final ErrorDisclosure errorDisclosure) {
+        this.errorDisclosure = errorDisclosure;
     }
 
     @Override

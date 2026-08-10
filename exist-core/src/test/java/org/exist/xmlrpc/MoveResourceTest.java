@@ -21,17 +21,11 @@
  */
 package org.exist.xmlrpc;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.fluent.Executor;
-import org.apache.http.client.fluent.Request;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
 import org.exist.TestUtils;
+import org.exist.http.AbstractHttpTest;
 import org.exist.test.ExistWebServer;
 import org.exist.util.io.InputStreamUtil;
 import org.exist.xmldb.XmldbURI;
@@ -39,8 +33,11 @@ import org.exist.xmldb.XmldbURI;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -48,6 +45,7 @@ import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.junit.AfterClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -73,6 +71,11 @@ public class MoveResourceTest {
 
     @ClassRule
     public static final ExistWebServer existWebServer = new ExistWebServer(true, false, true, true);
+
+    @AfterClass
+    public static void closeHttpConnectionManager() {
+        CheckThread.closeConnectionManager();
+    }
 
     private static String getXmlRpcUri() {
         return "http://localhost:" + existWebServer.getPort() + "/xmlrpc";
@@ -108,7 +111,7 @@ public class MoveResourceTest {
             for (int i = 0; i < n; i++) {
                 final Future<Boolean> future = cs.poll(TIMEOUT, TimeUnit.MILLISECONDS);
                 if (future == null) {
-                    i--;
+                    fail("testMove timed out after " + TIMEOUT + "ms — possible deadlock in worker threads");
                 } else {
                     final Boolean result = future.get();
                     assertNotNull(result);
@@ -199,7 +202,17 @@ public class MoveResourceTest {
     }
 
     private static class CheckThread implements Callable<Boolean> {
-        private static final PoolingHttpClientConnectionManager poolingHttpClientConnectionManager = new PoolingHttpClientConnectionManager();
+        private static final int HTTP_OK = 200;
+        // Force HTTP/1.1: RST_STREAM is an HTTP/2 frame; using HTTP/1.1 eliminates that failure mode.
+        private static final HttpClient httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .build();
+
+        static void closeConnectionManager() {
+            // The JDK HttpClient has no connection manager to close; retained for API compatibility.
+        }
+
         private final int iterations;
 
         public CheckThread(final int iterations) {
@@ -208,30 +221,36 @@ public class MoveResourceTest {
 
         @Override
         public Boolean call() throws IOException, InterruptedException {
-            final CloseableHttpClient client = HttpClients
-                    .custom()
-                    .setConnectionManager(poolingHttpClientConnectionManager)
-                    .build();
-            final org.apache.http.client.fluent.Executor executor = Executor.newInstance(client);
-
             final String reqUrl = getRestUri() + "/db?_query=" + URLEncoder.encode("collection('/db')//SPEECH[SPEAKER = 'JULIET']", "UTF-8");
-            final Request request = Request.Get(reqUrl);
+            final HttpRequest request = HttpRequest.newBuilder(URI.create(reqUrl)).GET().build();
 
             for (int i = 0; i < iterations; i++) {
-                HttpResponse response = null;
                 int lastStatus = -1;
                 for (int r = 0; r <= REST_RETRY_MAX; r++) {
-                    response = executor.execute(request).returnResponse();
-                    lastStatus = response.getStatusLine().getStatusCode();
-                    if (lastStatus == HttpStatus.SC_OK) {
+                    try {
+                        lastStatus = AbstractHttpTest.executeForStatus(httpClient, request);
+                    } catch (final IOException e) {
+                        if (r == REST_RETRY_MAX) {
+                            throw e;
+                        }
+                        try {
+                            Thread.sleep(REST_RETRY_DELAY_MS);
+                        } catch (final InterruptedException ie) {
+                            // Restore the interrupt flag and surface the original HTTP failure.
+                            Thread.currentThread().interrupt();
+                            throw e;
+                        }
+                        continue;
+                    }
+                    if (lastStatus == HTTP_OK) {
                         break;
                     }
                     if (lastStatus < 500 || r == REST_RETRY_MAX) {
-                        fail("REST query failed" + (r > 0 ? " after " + r + " retries" : "") + ": " + response.getStatusLine());
+                        fail("REST query failed" + (r > 0 ? " after " + r + " retries" : "") + ": HTTP " + lastStatus);
                     }
                     Thread.sleep(REST_RETRY_DELAY_MS);
                 }
-                assertEquals(response.getStatusLine().toString(), HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
+                assertEquals("HTTP " + lastStatus, HTTP_OK, lastStatus);
 
                 Thread.sleep(DELAY);
             }
