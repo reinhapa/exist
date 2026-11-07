@@ -4,7 +4,7 @@
 [versions]
 ai-djl-huggingface-tokenizers = "0.40.0"
 antlr-antlr = "2.7.7"
-at-yawk-lz4-lz4-java = "1.13.0"
+at-yawk-lz4-lz4-java = "1.14.0"
 ch-qos-logback-logback-core = "1.6.6"
 com-evolvedbinary-j8fu-j8fu = "1.24.0"
 com-evolvedbinary-multilock-multilock = "1.0.1"
